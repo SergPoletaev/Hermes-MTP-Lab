@@ -1,0 +1,33 @@
+# Generated Python and Node artifacts
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+node_modules/
+
+# Local runtime files, credentials and results
+.env
+.env.*
+!.env.example
+*.log
+*.tmp
+*.bak
+*.backup
+*.before-*
+config.yaml
+model-companions.json
+server.json
+Hermes-MTP-Reports/
+.mtp-lab-pending.json
+reports/
+
+# Build output and editor files
+dist/
+build/
+*.zip
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

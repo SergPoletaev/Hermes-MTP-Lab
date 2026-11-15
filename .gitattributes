@@ -1,0 +1,11 @@
+# Consistent text line endings for GitHub Desktop and CI on Windows/Linux.
+* text=auto eol=lf
+
+# The Windows launcher needs CRLF on disk. Git commits normalized LF
+# internally, but checks out CRLF consistently for a runnable .cmd file.
+*.cmd text eol=crlf
+
+# Images are binary assets and must never be newline-normalized.
+*.png binary
+*.jpg binary
+*.jpeg binary
