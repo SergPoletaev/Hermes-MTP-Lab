@@ -32,9 +32,9 @@ jobs:
       - name: Check sources, version and public package
         run: python tools/verify_repo.py
       - name: Python logic and mock benchmarks
-        run: python -m unittest discover -s hermes-mtp-lab/tests -p 'test_*.py' -v
+        run: python -m unittest discover -s tests -p 'test_*.py' -v
       - name: Desktop plugin registration test
-        run: node hermes-mtp-lab/tests/test_desktop_registration.cjs
+        run: node tests/test_desktop_registration.cjs
       - name: Build portable release and inspect contents
         run: |
           python tools/package_release.py --output dist
