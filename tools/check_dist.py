@@ -39,6 +39,11 @@ def check(out: Path) -> None:
     p=out/(PREFIX+'_PORTABLE_INSTALL.zip')
     check_zip(f,source_list(),SOURCE_ROOT)
     check_zip(p,portable_list(),'')
+    with zipfile.ZipFile(p) as z:
+        if not {'plugin.yaml','__init__.py','desktop/plugin.js','dashboard/manifest.json','dashboard/plugin_api.py'}.issubset(z.namelist()):
+            raise RuntimeError('Portable install is missing the root-level Hermes plugin layout')
+        if any(n.startswith('hermes-mtp-lab/') for n in z.namelist()):
+            raise RuntimeError('Obsolete nested plugin found in release package')
     print('PASS: both release ZIPs open and exactly match the current source files (no SHA manifest)')
 
 if __name__=='__main__':

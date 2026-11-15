@@ -5,20 +5,20 @@ from pathlib import Path
 import re
 import sys
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.3.0'
+VERSION = '0.3.2'
 EXPECT = [
     '.gitignore', '.gitattributes', '.github/workflows/ci.yml', 'README.md', 'docs/assets/mtp-lab-dashboard.png',
     'LICENSE', 'SECURITY.md', 'CONTRIBUTING.md', 'CHANGELOG.md',
     'RELEASE_NOTES.md', 'requirements-ci.txt',
     'Install-Hermes-MTP-Lab.cmd', 'Install-Hermes-MTP-Lab.ps1',
-    'hermes-mtp-lab/plugin.yaml', 'hermes-mtp-lab/__init__.py',
-    'hermes-mtp-lab/desktop/plugin.js', 'hermes-mtp-lab/dashboard/manifest.json',
-    'hermes-mtp-lab/dashboard/plugin_api.py', 'hermes-mtp-lab/dashboard/bench_core.py', 'hermes-mtp-lab/dashboard/model_support.py',
-    'hermes-mtp-lab/data/benchmark_scene.jpg',
-    'hermes-mtp-lab/tests/test_bench_core.py',
-    'hermes-mtp-lab/tests/test_desktop_registration.cjs',
-    'hermes-mtp-lab/tests/test_full_mock.py',
-    'hermes-mtp-lab/tests/test_progress_status.py',
+    'plugin.yaml', '__init__.py',
+    'desktop/plugin.js', 'dashboard/manifest.json',
+    'dashboard/plugin_api.py', 'dashboard/bench_core.py', 'dashboard/model_support.py',
+    'data/benchmark_scene.jpg',
+    'tests/test_bench_core.py',
+    'tests/test_desktop_registration.cjs',
+    'tests/test_full_mock.py',
+    'tests/test_progress_status.py', 'tests/test_repo_layout.py',
     'docs/ARCHITECTURE.md', 'docs/BENCHMARK_METHODOLOGY.md',
     'docs/PUBLISH_WITH_GITHUB_DESKTOP_RU.md', 'docs/EXAMPLE_RESULTS_2026-11-15.md',
     'tools/verify_repo.py', 'tools/package_release.py', 'tools/check_dist.py'
@@ -30,14 +30,14 @@ def check():
         p = ROOT/f
         if not p.is_file():problems.append(f'Missing public file: {f}')
     if problems:return problems
-    yaml = (ROOT/'hermes-mtp-lab/plugin.yaml').read_text(encoding='utf-8')
+    yaml = (ROOT/'plugin.yaml').read_text(encoding='utf-8')
     m = re.search(r'^version:\s*[\'"]?([^\s\'"]+)', yaml, re.M)
     if not m or m.group(1)!=VERSION:problems.append('Plugin version does not match v'+VERSION)
     texts = [
         ('Install-Hermes-MTP-Lab.cmd', r'v'+VERSION),
         ('Install-Hermes-MTP-Lab.ps1', r'v'+VERSION),
         ('README.md', VERSION), ('CHANGELOG.md', VERSION),
-        ('RELEASE_NOTES.md', VERSION), ('hermes-mtp-lab/desktop/plugin.js', 'v'+VERSION)
+        ('RELEASE_NOTES.md', VERSION), ('desktop/plugin.js', 'v'+VERSION)
     ]
     for f,needle in texts:
         if needle not in (ROOT/f).read_text(encoding='utf-8-sig'):
@@ -47,6 +47,8 @@ def check():
     for rule in ('* text=auto eol=lf', '*.cmd text eol=crlf', '*.png binary', '*.jpg binary'):
         if rule not in attrs:
             problems.append('Missing cross-platform Git EOL rule: '+rule)
+    if (ROOT/'hermes-mtp-lab').exists():
+        problems.append('Obsolete nested plugin: root plugin.yaml and desktop/plugin.js are required for plain Git installation')
     if (ROOT/'BUILD-MANIFEST.json').exists():
         problems.append('Obsolete BUILD-MANIFEST.json: remove manual source checksum tracking')
     if 'fastapi==0.128.2' not in (ROOT/'requirements-ci.txt').read_text(encoding='utf-8'):
@@ -65,11 +67,14 @@ def check():
         problems.append('Obsolete model-specific restriction in methodology')
     screen=ROOT/'docs/assets/mtp-lab-dashboard.png'
     if not screen.exists() or screen.read_bytes()[:8]!=b'\x89PNG\r\n\x1a\n':problems.append('Dashboard screenshot missing or not PNG')
-    js=(ROOT/'hermes-mtp-lab/desktop/plugin.js').read_text(encoding='utf-8')
-    for required in ('usePluginI18n','ctx.i18n.register(STRINGS)',"const PREF_KEY", 'languageAuto:', 'languageEn:', 'languageRu:', 'v0.3.0'):
+    js=(ROOT/'desktop/plugin.js').read_text(encoding='utf-8')
+    for required in ('usePluginI18n','ctx.i18n.register(STRINGS)',"const PREF_KEY", 'languageAuto:', 'languageEn:', 'languageRu:', 'v0.3.2'):
         if required not in js:problems.append('UI translation/persistence check failed: '+required)
+    # Root layout is mandatory: Hermes Install from Git must discover both halves.
+    if not (ROOT/'plugin.yaml').is_file() or not (ROOT/'desktop/plugin.js').is_file():
+        problems.append('Plain Git install incompatible: plugin.yaml and desktop/plugin.js must be at repository root')
     # No per-file SHA manifest: source edits must not require manual checksum maintenance.
-    img=ROOT/'hermes-mtp-lab/data/benchmark_scene.jpg'
+    img=ROOT/'data/benchmark_scene.jpg'
     if img.stat().st_size < 10000 or img.read_bytes()[:3]!=b'\xff\xd8\xff':
         problems.append('Benchmark JPG absent/invalid')
     for p in ROOT.rglob('*'):

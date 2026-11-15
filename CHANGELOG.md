@@ -2,6 +2,20 @@
 
 All notable changes to Hermes MTP Lab are documented here. Version numbers identify the **plugin**, not Hermes Desktop or llama.cpp.
 
+## [0.3.2] — 2026-11-16 (companion discovery and explicit MTP evidence)
+
+- Automatically discover local mmproj GGUF candidates beside the selected model; suggest a filename-ranked match but require explicit confirmation before persisting a link.
+- Native Hermes Desktop folder picker allows selecting any other projector folder without typing a filesystem path; the selected file is validated as GGUF before saving.
+- Distinguish MTP embedded in GGUF (confirmed via header metadata), external MTP head, and MTP advertised by native preset but not confirmed by GGUF metadata. Only confirmed embedded MTP receives the green status. No unsupported model/quantization assumptions.
+- No changes to the running inference engine, existing Lifecycle Fix, baseline benchmark workloads or mandatory SHA checks (none).
+
+## [0.3.1] — 2026-11-15 (root-level Git installation)
+
+- Moved `plugin.yaml`, `__init__.py`, `desktop/`, `dashboard/`, and `data/` to the Git repository root, enabling Hermes Desktop **Install from Git** with the plain `.git` URL.
+- Updated Windows installer, GitHub Actions, Python/JS tests, source and portable ZIP packaging, and four-language installation documentation for the new layout.
+- No changes to the model-agnostic MTP benchmark algorithms, user model configurations, or mandatory SHA files (none required).
+- This version needs a real in-app Git installation test; CI alone cannot certify Desktop install.
+
 ## [0.3.0] — 2026-11-15 (experimental, model-agnostic)
 
 - Remove BUILD-MANIFEST per-file SHA-256 requirements and release SHA256SUMS generation; CI now verifies source structure and tests and compares release ZIP entries directly to current sources. No manual checksum updates after edits.

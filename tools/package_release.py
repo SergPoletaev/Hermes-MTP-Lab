@@ -4,9 +4,11 @@ from __future__ import annotations
 from pathlib import Path
 import argparse, zipfile
 ROOT = Path(__file__).resolve().parents[1]
-VERSION='0.3.0'
+VERSION='0.3.2'
 PROJECT='Hermes-MTP-Lab'
 PREFIX='Hermes_MTP_Lab_v'+VERSION
+PLUGIN_TOP=['plugin.yaml','__init__.py']
+PLUGIN_DIRS={'dashboard','desktop','data'}
 INSTALL_TOP=[
     'Install-Hermes-MTP-Lab.cmd', 'Install-Hermes-MTP-Lab.ps1',
     'README.md','docs/assets/mtp-lab-dashboard.png',
@@ -27,7 +29,8 @@ def source_list():
 
 def portable_list():
     files=[ROOT/x for x in INSTALL_TOP]
-    files += [p for p in source_list() if p.relative_to(ROOT).parts[0]=='hermes-mtp-lab' and 'tests' not in p.relative_to(ROOT).parts]
+    files += [ROOT/x for x in PLUGIN_TOP]
+    files += [p for p in source_list() if p.relative_to(ROOT).parts[0] in PLUGIN_DIRS]
     return sorted(set(files))
 
 def write_zip(dest:Path, files:list[Path], prefix=''):

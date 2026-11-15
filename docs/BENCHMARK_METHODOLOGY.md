@@ -2,7 +2,7 @@
 
 ## Protocol
 
-The benchmark submits the same eligible tasks to one **user-selected MTP-compatible, Hermes-managed local GGUF model** twice: **MTP OFF**, then **MTP ON**. Models without a vision projector use **four text tasks** (8 requests for one repeat or 24 for three repeats); models with a valid mmproj use **six tasks** (12 or 36 requests respectively). A short warm-up request occurs in each phase and is excluded from measured totals. The bundled original reference photograph (`hermes-mtp-lab/data/benchmark_scene.jpg`) is used for both vision tasks when supported.
+The benchmark submits the same eligible tasks to one **user-selected MTP-compatible, Hermes-managed local GGUF model** twice: **MTP OFF**, then **MTP ON**. Models without a vision projector use **four text tasks** (8 requests for one repeat or 24 for three repeats); models with a valid mmproj use **six tasks** (12 or 36 requests respectively). A short warm-up request occurs in each phase and is excluded from measured totals. The bundled original reference photograph (`data/benchmark_scene.jpg`) is used for both vision tasks when supported.
 
 The two phases use identical task inputs, fixed random seed (12345), `temperature=0`, `top_p=1`, output cap (260 tokens), and a temporarily pinned context window equal to the **lesser of the selected preset context and 32768**. The original selected preset bytes (including MTP and context settings) are restored after the run. No architecture, quantization, or particular model name is hardcoded; MTP support must be established separately for each model and companion combination.
 
@@ -27,6 +27,12 @@ For each request the local child server provides cumulative Prometheus-style `/m
 
 The GitHub Actions pipeline runs Python unit tests, JS registration tests, a mock OFF/ON exercise and packaging checks. It does **not** install Hermes on Windows or validate actual speculative decoding on an RTX GPU. Live results must be confirmed independently before promoting a build from experimental status.
 
-## Any compatible local model (v0.3.0)
+## Any compatible local model (v0.3.2)
 
 The selected model is taken from Hermes native managed presets, not from any hardcoded GGUF name or quantization. For models with no projector only the four text tasks run (8 quick / 24 full measurements). With a valid mmproj all six tasks are eligible (12 quick / 36 full). MTP requires either an explicitly linked compatible separate head or verified embedded MTP metadata/preset. A successful MTP launch and accepted draft tokens are required for valid ON results. OFF/ON use matching launch context, at most the smaller of the existing context and 32768. Original preset bytes are restored.
+
+## Companion discovery and MTP evidence (v0.3.2)
+
+The UI only *suggests* mmproj GGUFs next to the exact user-selected Hermes model, inspecting the GGUF file signature and ranking filenames. The user must confirm and save the chosen projector. Another directory can be selected with the Hermes Desktop folder-picker; no filesystem-wide scan or inferred binding is performed. Vision tests are enabled only for a linked readable projector. Filename similarity alone cannot guarantee architectural compatibility.
+
+MTP is shown as **verified embedded** only if the main GGUF's `nextn_predict_layers` metadata is detected by the Hermes metadata reader. An already configured native `draft-mtp` preset without that metadata is displayed as configured but unverified. A linked external head has its own state. Compatibility and performance still require a real OFF/ON test.

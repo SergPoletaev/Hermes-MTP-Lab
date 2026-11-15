@@ -10,7 +10,7 @@ Hermes local runtime supervisor (must be owned by this backend)
 Local /chat/completions and /metrics
 ```
 
-The `hermes-mtp-lab` directory is the self-contained plugin. Hermes loads `desktop/plugin.js` for the sidebar route, and the Python API exposes `/status`, `/start`, `/cancel`, `/toggle`, `/recover` within the Hermes plugin framework.
+The Git repository root is the self-contained Hermes hybrid plugin (`plugin.yaml`, `__init__.py`, `desktop/`, `dashboard/`). Hermes loads `desktop/plugin.js` for the sidebar route, and the Python API exposes `/status`, `/start`, `/cancel`, `/toggle`, `/recover` within the Hermes plugin framework.
 
 ## Model-agnostic selection, pairing and recovery
 

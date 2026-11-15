@@ -2,7 +2,7 @@
 $script:Result = 1
 try {
     $pluginName = 'hermes-mtp-lab'
-    $source = Join-Path $PSScriptRoot $pluginName
+    $source = $PSScriptRoot
     $hermesRoot = Join-Path $env:LOCALAPPDATA 'hermes'
     $target = Join-Path (Join-Path $hermesRoot 'plugins') $pluginName
     $shim = Join-Path (Join-Path $hermesRoot 'bin') 'hermes.cmd'
@@ -10,7 +10,7 @@ try {
     $timeStamp = (Get-Date).ToString('yyyyMMdd-HHmmss')
     $suffix = $timeStamp + '-' + ([guid]::NewGuid().ToString('N').Substring(0,8))
 
-    Write-Host 'Hermes MTP Lab v0.3.0 - Installer (native Hermes plugin enable)' -ForegroundColor Cyan
+    Write-Host 'Hermes MTP Lab v0.3.2 - Installer (native Hermes plugin enable)' -ForegroundColor Cyan
     Write-Host "Source: $source"
     Write-Host "Destination: $target"
 
@@ -48,7 +48,13 @@ try {
         $installed = $false
         try {
             New-Item -Path $stage -ItemType Directory -Force | Out-Null
-            Copy-Item -Path (Join-Path $source '*') -Destination $stage -Recurse -Force
+            # Install only the plugin package, not .git, CI, test files, or repository docs.
+            foreach($file in @('plugin.yaml','__init__.py')) {
+                Copy-Item -LiteralPath (Join-Path $source $file) -Destination (Join-Path $stage $file) -Force
+            }
+            foreach($folder in @('desktop','dashboard','data')) {
+                Copy-Item -LiteralPath (Join-Path $source $folder) -Destination $stage -Recurse -Force
+            }
             foreach($file in @('plugin.yaml','__init__.py','desktop\plugin.js','dashboard\plugin_api.py','dashboard\bench_core.py','dashboard\model_support.py','dashboard\manifest.json','data\benchmark_scene.jpg')) {
                 if (-not (Test-Path -LiteralPath (Join-Path $stage $file) -PathType Leaf)) {throw "Staging check failed: $file"}
             }
