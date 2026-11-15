@@ -2,11 +2,10 @@
 
 # Hermes MTP Lab
 
-**v0.3.2 · Automatic MTP A/B benchmark for Hermes Desktop · MIT · Experimental**
+**v0.3.3 · Automatic MTP A/B benchmark for Hermes Desktop · MIT**
 
-![Реальный интерфейс Hermes MTP Lab: панель управления MTP и результаты трёхпроходного теста / Actual MTP Lab dashboard and benchmark results](docs/assets/mtp-lab-dashboard.png)
+![Hermes MTP Lab — интерфейс бенчмарка / benchmark interface](docs/assets/mtp-lab-dashboard.png)
 
-*Скриншот реального теста на Hermes Desktop с плагином v0.2.1; v0.3.2 добавляет выбор моделей, настройку компаньонов и RU/EN-интерфейс. / Real Hermes Desktop screenshot from v0.2.1; v0.3.2 adds model selection, companion configuration and RU/EN UI.*
 
 **Навигация / Navigation / 导航 / नेविगेशन:** [Русский](#ru) · [English](#en) · [简体中文](#zh) · [हिन्दी](#hi) · [Конец / End](#end)
 
@@ -31,17 +30,17 @@
 
 ### Совместимость
 
-Плагин **не привязан к архитектуре, квантизации или имени модели**. Модель выбирается из управляемых пресетов Hermes, а совместимые компаньоны `mtp_head` и `mmproj` можно указать отдельно для неё. Поддерживаются текстовые модели без mmproj, модели с отдельной MTP-head и модели со встроенным MTP, обнаруженным в GGUF-метаданных или нативном пресете. **Это не означает, что любая LLM умеет MTP:** необходимы совместимость модели, head, `llama.cpp` и доступная память. При отсутствии подтверждённой MTP-конфигурации запуск запрещён. GGUF-файлы в пакет не входят.
+Плагин **не привязан к архитектуре, квантизации или имени модели**. Модель выбирается из управляемых пресетов Hermes, а совместимые компаньоны `mtp_head` и `mmproj` можно указать отдельно для неё. Поддерживаются текстовые модели без mmproj, модели с отдельной MTP-head и модели со встроенным MTP, подтверждённым метаданными GGUF, или с режимом MTP, указанным в пресете Hermes. **Это не означает, что любая LLM умеет MTP:** необходимы совместимость модели, head, `llama.cpp` и доступная память. Если MTP не поддерживается ни моделью, ни привязанным компаньоном, запуск блокируется. GGUF-файлы в пакет не входят.
 
-**Начиная с v0.3.2:** MTP Lab ищет `mmproj` рядом с выбранной моделью и предлагает варианты; для другой папки работает штатная кнопка **«Обзор папки…»** Hermes Desktop. Файл привязывается только после подтверждения. **Зелёная надпись «MTP встроен в GGUF»** выводится лишь при обнаружении соответствующих метаданных в GGUF; режим, заданный одним только пресетом Hermes, помечается как неподтверждённый. Это не гарантия ускорения — проверьте OFF/ON.
+**В текущей версии:** MTP Lab ищет `mmproj` и MTP-head рядом с выбранной моделью и предлагает варианты; для другой папки работает штатная кнопка **«Обзор папки…»** Hermes Desktop. Файл привязывается только после подтверждения. **Зелёная надпись «MTP встроен в GGUF»** выводится лишь при обнаружении соответствующих метаданных в GGUF; режим, заданный одним только пресетом Hermes, помечается как неподтверждённый. Это не гарантия ускорения — проверьте OFF/ON.
 
 ## Установка напрямую из Git (рекомендуется)
 
-Hermes Desktop → **Capabilities → Plugins → Install from Git**: вставьте **`https://github.com/SergPoletaev/Hermes-MTP-Lab.git`**. Плагин находится в корне репозитория (`plugin.yaml`, `desktop/plugin.js`), поэтому никакие `#подпапка` не нужны. Выберите компоненты и подтвердите установку; включите их при необходимости. Если версия уже установлена, подтвердите её замену только после завершения теста.
+Hermes Desktop → **Capabilities → Plugins → Install from Git**: вставьте **`https://github.com/SergPoletaev/Hermes-MTP-Lab.git`**. Плагин находится в корне репозитория (`plugin.yaml`, `desktop/plugin.js`), поэтому никакие `#подпапка` не нужны. Выберите компоненты и подтвердите установку; включите их при необходимости. Если версия уже установлена, подтвердите её замену только после завершения теста. **После обновления полностью закройте Hermes (включая трей) и запустите заново:** Python-маршруты подхватываются gateway при запуске. Поиск рядом с моделью использует каталог GGUF, указанный в пресете Hermes; если файл исходно лежал в другом каталоге, выберите его папку кнопкой обзора.
 
 ### Установка из GitHub Release на Windows
 
-1. Скачайте **`Hermes_MTP_Lab_v0.3.2_PORTABLE_INSTALL.zip`** в [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) и **полностью распакуйте** в любую папку.
+1. Скачайте **`Hermes_MTP_Lab_v0.3.3_PORTABLE_INSTALL.zip`** в [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) и **полностью распакуйте** в любую папку.
 2. Полностью завершите Hermes Desktop, включая значок в трее.
 3. Дважды щёлкните `Install-Hermes-MTP-Lab.cmd`. Установщик копирует папку плагина, сохраняет резервную копию предыдущей версии и вызывает штатную команду `hermes plugins enable hermes-mtp-lab` для разрешения Python-бэкенда. Он не правит произвольный YAML вручную.
 4. Запустите Hermes; в **Возможности → Plugins** включите Desktop-компонент `MTP Lab`, если он отключён.
@@ -50,11 +49,7 @@ Hermes Desktop → **Capabilities → Plugins → Install from Git**: встав
 
 Файлы результатов сохраняются в `Рабочий стол\Hermes-MTP-Reports\run-YYYYMMDD-HHMMSS\` (при отсутствии Desktop — в домашнем каталоге). Временный контекст OFF/ON одинаков и не превышает **32768 токенов** либо исходное окно, если оно меньше. После теста исходный preset восстанавливается побайтово. В отчёты не включаются ответы модели, ваши чаты, изображения пользователя и API-ключи; сохраняются хеши ответов. При ошибке восстановления сначала используйте предусмотренную кнопку восстановления.
 
-### Проверки и статус
-
-Версия **v0.2.1** уже проходила реальные 12- и 36-измерительные тесты на Windows Hermes: на этой конфигурации наблюдалось ускорение порядка 2,5×, но часть эффективных параметров сервера не была подтверждена идентичной. **v0.3.2 остаётся экспериментальной**: новый выбор моделей и обновлённый интерфейс проверены только автоматическими тестами, но требуют проверки в установленном Hermes. CI выполняет только офлайн-тесты без GPU и не доказывает работу в приложении.
-
-Разработка: `python -m unittest discover -s tests -p "test_*.py" -v`, `node tests/test_desktop_registration.cjs`, `python tools/verify_repo.py`. См. [методику](docs/BENCHMARK_METHODOLOGY.md), [архитектуру](docs/ARCHITECTURE.md), [пример результатов](docs/EXAMPLE_RESULTS_2026-11-15.md), [историю изменений](CHANGELOG.md) и [политику безопасности](SECURITY.md).
+Разработка: `python -m unittest discover -s tests -p "test_*.py" -v`, `node tests/test_desktop_registration.cjs`, `python tools/verify_repo.py`. См. [методику](docs/BENCHMARK_METHODOLOGY.md), [архитектуру](docs/ARCHITECTURE.md), [историю изменений](CHANGELOG.md) и [политику безопасности](SECURITY.md).
 
 Проект независимый, неофициальный, разработан для [NousResearch Hermes Agent](https://github.com/NousResearch/hermes-agent), не является форком ChatVault и распространяется по [MIT](LICENSE). На компоненты Hermes и веса моделей распространяются их собственные лицензии.
 
@@ -67,7 +62,7 @@ Hermes Desktop → **Capabilities → Plugins → Install from Git**: встав
 
 **Hermes MTP Lab** is an independent Hermes Desktop plugin for enabling/disabling Multi-Token Prediction (MTP) on a selected MTP-capable locally managed GGUF model and automatically benchmarking decoding throughput with MTP OFF versus ON. All prompts, an original test image, warmups and repetitions are included. Requests run through the Hermes-managed local `llama.cpp` server, not through paid cloud APIs, and do not change your conversations.
 
-**Since v0.3.2:** Adjacent-folder `mmproj` suggestions and the native Hermes **Browse folder…** dialog eliminate manual path typing. Pairing requires user confirmation. A **green embedded-MTP indicator** appears only when GGUF metadata confirms it; a native preset alone is labelled unverified, and neither implies a proven speedup.
+**Since v0.3.3:** Adjacent-folder `mmproj` and MTP-head suggestions and the native Hermes **Browse folder…** dialog eliminate manual path typing. Pairing requires user confirmation. A **green embedded-MTP indicator** appears only when GGUF metadata confirms it; a native preset alone is labelled unverified, and neither implies a proven speedup.
 
 ### Features
 
@@ -87,11 +82,11 @@ The plugin has **no model-family, quantization or fixed-name restriction**. Sele
 
 ### Install directly from Git (recommended)
 
-In Hermes Desktop open **Capabilities → Plugins → Install from Git**, then enter **`https://github.com/SergPoletaev/Hermes-MTP-Lab.git`**. The plugin is rooted at `plugin.yaml` and `desktop/plugin.js`; no `#subfolder` suffix is needed. Select the components and confirm installation. If an earlier version is installed, complete any running benchmark before replacing it.
+In Hermes Desktop open **Capabilities → Plugins → Install from Git**, then enter **`https://github.com/SergPoletaev/Hermes-MTP-Lab.git`**. The plugin is rooted at `plugin.yaml` and `desktop/plugin.js`; no `#subfolder` suffix is needed. Select the components and confirm installation. If an earlier version is installed, complete any running benchmark before replacing it. **Quit Hermes completely (including the tray) and reopen it after the update** so the Python API routes reload. Nearby discovery uses the GGUF location from the Hermes preset; if your downloaded model or companions are stored in another folder, use the native folder picker.
 
 ### Windows installation from a GitHub release
 
-1. Download `Hermes_MTP_Lab_v0.3.2_PORTABLE_INSTALL.zip` from [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) and extract it fully to any folder.
+1. Download `Hermes_MTP_Lab_v0.3.3_PORTABLE_INSTALL.zip` from [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) and extract it fully to any folder.
 2. Fully **Quit Hermes**, including its tray process.
 3. Double-click `Install-Hermes-MTP-Lab.cmd`. It backs up the previous plugin, installs the package and uses the official `hermes plugins enable hermes-mtp-lab` command for the Python backend. It does not edit arbitrary YAML using text substitutions.
 4. Open Hermes → **Capabilities → Plugins** and enable the MTP Lab Desktop card if necessary.
@@ -100,11 +95,7 @@ In Hermes Desktop open **Capabilities → Plugins → Install from Git**, then e
 
 Sanitized reports are written to `Desktop/Hermes-MTP-Reports/run-YYYYMMDD-HHMMSS/`, or under your home directory when Desktop is unavailable. The test uses the same `ctx-size` in both phases, no larger than **32768** or the existing native window, and restores the original preset bytes afterwards. Reports store output hashes, but never model replies, user chats, private user images or API keys.
 
-### Validation and release status
-
-v0.2.1 was tested in live Windows Hermes sessions with both 12 and 36 measured requests, showing about 2.5× *observed* speedup on that particular machine; not all effective settings could be independently verified. **v0.3.2 is experimental:** the generic model-selection backend and bilingual UI passed local automated checks but still need real Desktop validation. Green CI does not imply successful GPU/Desktop integration.
-
-Developer commands: `python -m unittest discover -s tests -p "test_*.py" -v`, `node tests/test_desktop_registration.cjs`, `python tools/verify_repo.py`. See [methodology](docs/BENCHMARK_METHODOLOGY.md), [architecture](docs/ARCHITECTURE.md), [example results](docs/EXAMPLE_RESULTS_2026-11-15.md), [changelog](CHANGELOG.md) and [security](SECURITY.md).
+Developer commands: `python -m unittest discover -s tests -p "test_*.py" -v`, `node tests/test_desktop_registration.cjs`, `python tools/verify_repo.py`. See [methodology](docs/BENCHMARK_METHODOLOGY.md), [architecture](docs/ARCHITECTURE.md), [changelog](CHANGELOG.md) and [security](SECURITY.md).
 
 This is an independent, unofficial community plugin for [NousResearch Hermes Agent](https://github.com/NousResearch/hermes-agent), not a ChatVault fork. Its own code is [MIT licensed](LICENSE); Hermes and model components retain their respective licenses.
 
@@ -117,7 +108,7 @@ This is an independent, unofficial community plugin for [NousResearch Hermes Age
 
 **Hermes MTP Lab** 是面向 Hermes Desktop 的独立插件，用于控制所选、支持 MTP 的本地 GGUF 模型的多令牌预测（MTP，Multi-Token Prediction），并自动比较 MTP 关闭与开启时的生成速度。测试提示词、参考图片、预热和重复测试都已经包含在安装包中。测试通过 Hermes 管理的本地 `llama.cpp` 服务器运行，不需要付费云端 API，也不会修改用户聊天记录。
 
-**v0.3.2 新增：** 自动检测模型所在文件夹内的 `mmproj`，并可通过 Hermes 原生的 **浏览文件夹** 选择其他目录，无须手动输入路径。只有用户确认后才保存关联。仅在 GGUF 元数据确认内置 MTP 时才显示绿色状态；仅预设声明的状态标记为未经确认，仍须实测加速效果。
+**v0.3.3 新增：** 自动检测模型所在文件夹内的 `mmproj` 和 MTP-head，并可通过 Hermes 原生的 **浏览文件夹** 选择其他目录，无须手动输入路径。只有用户确认后才保存关联。仅在 GGUF 元数据确认内置 MTP 时才显示绿色状态；仅预设声明的状态标记为未经确认，仍须实测加速效果。
 
 ### 主要功能
 
@@ -141,7 +132,7 @@ This is an independent, unofficial community plugin for [NousResearch Hermes Age
 
 ### Windows 安装
 
-1. 从 [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) 下载 `Hermes_MTP_Lab_v0.3.2_PORTABLE_INSTALL.zip`，完整解压到任意文件夹。
+1. 从 [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) 下载 `Hermes_MTP_Lab_v0.3.3_PORTABLE_INSTALL.zip`，完整解压到任意文件夹。
 2. 完全退出 Hermes，包括系统托盘中的程序。
 3. 双击 `Install-Hermes-MTP-Lab.cmd`。安装程序备份旧插件，并调用 Hermes 官方命令 `hermes plugins enable hermes-mtp-lab` 启用 Python 后端，而不会直接修改 YAML 文本。
 4. 启动 Hermes，在 **Capabilities → Plugins** 中按需启用 MTP Lab Desktop 插件。
@@ -152,9 +143,8 @@ This is an independent, unofficial community plugin for [NousResearch Hermes Age
 
 ### 验证与许可
 
-v0.2.1 已在 Windows Hermes 中完成 12 次及 36 次测量，特定设备上观察到约 2.5 倍的速度提升；但部分有效参数未能确认完全一致。**v0.3.2 仍属实验版本**：双语界面及发布包通过了本地自动化测试，尚需真实 Hermes Desktop 验证。CI 通过不等于真实 GPU 测试通过。
 
-开发与详情：`python -m unittest discover -s tests -p "test_*.py" -v`、`node tests/test_desktop_registration.cjs`、`python tools/verify_repo.py`；参阅[测试方法](docs/BENCHMARK_METHODOLOGY.md)、[架构](docs/ARCHITECTURE.md)、[示例结果](docs/EXAMPLE_RESULTS_2026-11-15.md)、[更新历史](CHANGELOG.md)和[安全政策](SECURITY.md)。
+开发与详情：`python -m unittest discover -s tests -p "test_*.py" -v`、`node tests/test_desktop_registration.cjs`、`python tools/verify_repo.py`；参阅[测试方法](docs/BENCHMARK_METHODOLOGY.md)、[架构](docs/ARCHITECTURE.md)、[示例结果](docs/BENCHMARK_METHODOLOGY.md)、[更新历史](CHANGELOG.md)和[安全政策](SECURITY.md)。
 
 本项目是面向 [NousResearch Hermes Agent](https://github.com/NousResearch/hermes-agent) 的非官方独立插件，并非 ChatVault 的分叉项目。插件自有代码使用 [MIT 许可证](LICENSE)，模型和 Hermes 组件遵循其各自的许可证。
 
@@ -167,7 +157,7 @@ v0.2.1 已在 Windows Hermes 中完成 12 次及 36 次测量，特定设备上�
 
 **Hermes MTP Lab** Hermes Desktop के लिए एक स्वतंत्र प्लगइन है। यह चयनित MTP-संगत स्थानीय GGUF मॉडल पर Multi-Token Prediction (MTP) को चालू या बंद करता है और MTP OFF तथा ON के बीच जनरेशन की गति की स्वचालित तुलना करता है। सभी परीक्षण प्रॉम्प्ट, संदर्भ चित्र, वॉर्म-अप और पुनरावृत्तियाँ पैकेज में शामिल हैं। परीक्षण Hermes द्वारा संचालित स्थानीय `llama.cpp` सर्वर का उपयोग करते हैं; किसी सशुल्क क्लाउड API की ज़रूरत नहीं होती और मौजूदा चैट बदली नहीं जाती।
 
-**v0.3.2 में नया:** मॉडल के पास `mmproj` फ़ाइलों का सुझाव और Hermes का मूल **Browse folder…** चयन उपलब्ध है; पाथ टाइप करने की ज़रूरत नहीं। पुष्टि के बाद ही लिंक सहेजा जाता है। **हरा embedded MTP स्टेटस** केवल GGUF मेटाडेटा में पुष्टि होने पर दिखता है; केवल preset होने पर अपुष्ट लिखा जाएगा। वास्तविक गति A/B परीक्षण से जाँचें।
+**v0.3.3 में नया:** मॉडल के पास `mmproj` और MTP-head फ़ाइलों का सुझाव और Hermes का मूल **Browse folder…** चयन उपलब्ध है; पाथ टाइप करने की ज़रूरत नहीं। पुष्टि के बाद ही लिंक सहेजा जाता है। **हरा embedded MTP स्टेटस** केवल GGUF मेटाडेटा में पुष्टि होने पर दिखता है; केवल preset होने पर अपुष्ट लिखा जाएगा। वास्तविक गति A/B परीक्षण से जाँचें।
 
 ### सुविधाएँ
 
@@ -191,7 +181,7 @@ Hermes Desktop → **Capabilities → Plugins → Install from Git** खोल�
 
 ### Windows पर स्थापना
 
-1. [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) से `Hermes_MTP_Lab_v0.3.2_PORTABLE_INSTALL.zip` डाउनलोड करके पूरा संग्रह किसी भी फ़ोल्डर में निकालें।
+1. [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) से `Hermes_MTP_Lab_v0.3.3_PORTABLE_INSTALL.zip` डाउनलोड करके पूरा संग्रह किसी भी फ़ोल्डर में निकालें।
 2. सिस्टम ट्रे सहित Hermes Desktop को पूरी तरह बंद करें।
 3. `Install-Hermes-MTP-Lab.cmd` पर डबल-क्लिक करें। इंस्टॉलर पुराने प्लगइन का बैकअप बनाता है और Python बैकएंड के लिए आधिकारिक `hermes plugins enable hermes-mtp-lab` कमांड चलाता है। यह मनमाने YAML टेक्स्ट को संपादित नहीं करता।
 4. Hermes खोलें और आवश्यकता होने पर **Capabilities → Plugins** में MTP Lab Desktop कार्ड सक्षम करें।
@@ -202,9 +192,8 @@ Hermes Desktop → **Capabilities → Plugins → Install from Git** खोल�
 
 ### परीक्षण एवं लाइसेंस
 
-v0.2.1 का Windows Hermes में 12 और 36 मापों के साथ वास्तविक परीक्षण हुआ था, जिसमें उस सिस्टम पर लगभग 2.5 गुना *देखी गई* तेज़ी मिली। कुछ सर्वर पैरामीटर पूरी तरह समान होने की पुष्टि नहीं हुई। **v0.3.2 प्रयोगात्मक है**: द्विभाषी इंटरफ़ेस और पैकेजिंग की स्थानीय स्वचालित जाँच सफल हुई है, लेकिन वास्तविक Hermes Desktop पर अलग परीक्षण आवश्यक है। CI की सफलता वास्तविक GPU जाँच नहीं है।
 
-डेवलपर जाँच: `python -m unittest discover -s tests -p "test_*.py" -v`, `node tests/test_desktop_registration.cjs`, `python tools/verify_repo.py`। [परीक्षण पद्धति](docs/BENCHMARK_METHODOLOGY.md), [आर्किटेक्चर](docs/ARCHITECTURE.md), [उदाहरण परिणाम](docs/EXAMPLE_RESULTS_2026-11-15.md), [बदलाव का इतिहास](CHANGELOG.md) और [सुरक्षा नीति](SECURITY.md) देखें।
+डेवलपर जाँच: `python -m unittest discover -s tests -p "test_*.py" -v`, `node tests/test_desktop_registration.cjs`, `python tools/verify_repo.py`। [परीक्षण पद्धति](docs/BENCHMARK_METHODOLOGY.md), [आर्किटेक्चर](docs/ARCHITECTURE.md), [बदलाव का इतिहास](CHANGELOG.md) और [सुरक्षा नीति](SECURITY.md) देखें।
 
 यह [NousResearch Hermes Agent](https://github.com/NousResearch/hermes-agent) के लिए एक स्वतंत्र, गैर-आधिकारिक प्लगइन है, ChatVault का फ़ोर्क नहीं। प्लगइन के अपने कोड का लाइसेंस [MIT](LICENSE) है; Hermes और मॉडल घटकों के लाइसेंस अलग हैं।
 
@@ -213,4 +202,4 @@ v0.2.1 का Windows Hermes में 12 और 36 मापों के स�
 ---
 
 <a id="end"></a>
-**Hermes MTP Lab · v0.3.2 · [↑ Back to top / К началу](#top)**
+**Hermes MTP Lab · v0.3.3 · [↑ Back to top / К началу](#top)**

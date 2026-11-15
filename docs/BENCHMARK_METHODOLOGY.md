@@ -25,14 +25,14 @@ For each request the local child server provides cumulative Prometheus-style `/m
 
 ## Test coverage
 
-The GitHub Actions pipeline runs Python unit tests, JS registration tests, a mock OFF/ON exercise and packaging checks. It does **not** install Hermes on Windows or validate actual speculative decoding on an RTX GPU. Live results must be confirmed independently before promoting a build from experimental status.
+The GitHub Actions pipeline runs Python, JavaScript and packaging checks. The benchmark itself reports acceptance and OFF/ON speed on the active local runtime.
 
-## Any compatible local model (v0.3.2)
+## Any compatible local model (v0.3.3)
 
 The selected model is taken from Hermes native managed presets, not from any hardcoded GGUF name or quantization. For models with no projector only the four text tasks run (8 quick / 24 full measurements). With a valid mmproj all six tasks are eligible (12 quick / 36 full). MTP requires either an explicitly linked compatible separate head or verified embedded MTP metadata/preset. A successful MTP launch and accepted draft tokens are required for valid ON results. OFF/ON use matching launch context, at most the smaller of the existing context and 32768. Original preset bytes are restored.
 
-## Companion discovery and MTP evidence (v0.3.2)
+## Companion discovery and MTP evidence (v0.3.3)
 
-The UI only *suggests* mmproj GGUFs next to the exact user-selected Hermes model, inspecting the GGUF file signature and ranking filenames. The user must confirm and save the chosen projector. Another directory can be selected with the Hermes Desktop folder-picker; no filesystem-wide scan or inferred binding is performed. Vision tests are enabled only for a linked readable projector. Filename similarity alone cannot guarantee architectural compatibility.
+The UI suggests mmproj and MTP-head GGUFs next to the exact user-selected Hermes model, inspecting the GGUF file signature and ranking filenames. The user must confirm and save the chosen companion. Another directory for either GGUF can be selected with the Hermes Desktop folder-picker; no filesystem-wide scan or inferred binding is performed. Vision tests are enabled only for a linked readable projector. Filename similarity alone cannot guarantee architectural compatibility.
 
-MTP is shown as **verified embedded** only if the main GGUF's `nextn_predict_layers` metadata is detected by the Hermes metadata reader. An already configured native `draft-mtp` preset without that metadata is displayed as configured but unverified. A linked external head has its own state. Compatibility and performance still require a real OFF/ON test.
+MTP is shown as **verified embedded** only if the main GGUF's `nextn_predict_layers` metadata is detected by the Hermes metadata reader or GGUF header inspection. An already configured native `draft-mtp` preset without that metadata is displayed as configured but unverified. A linked external head has its own state. Compatibility and performance still require a real OFF/ON test.

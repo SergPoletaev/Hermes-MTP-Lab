@@ -11,6 +11,7 @@ except ImportError:
     spec=importlib.util.spec_from_file_location('hermes_mtp_lab_bench_core',file)
     bench=importlib.util.module_from_spec(spec);spec.loader.exec_module(bench)
 router=APIRouter()
+API_VERSION="0.3.3"
 
 def environment():
     sup,preset,comp,models=bench.get_model_environment()
@@ -39,6 +40,12 @@ def status():
         if s.get('state')=='running' and s.get('selected_model')==mid and isinstance(s.get('model_spec'),dict):
             selected=s['model_spec']
         s['selected']=selected
+        s['api_version']=API_VERSION
+        if selected:
+            s['projector_candidates']=bench.ms.projector_candidates(selected['model_path'])
+            s['head_candidates']=bench.ms.head_candidates(selected['model_path'])
+        else:
+            s['projector_candidates']=[];s['head_candidates']=[]
         s['mtp_flag']=selected['native_mtp'] if selected else None
         s['mtp_manifest_flag']=selected['persistent_flag'] if selected else None
         s['tasks_per_phase']=len([x for x in bench.TASKS if not x['image'] or (selected and selected['has_mmproj'])])
@@ -51,19 +58,8 @@ def status():
             s['pending_model']=info.get('model')
         else:s['recovery_needed']=False
     except Exception as exc:
-        s['status_warning']=str(exc);s.setdefault('models',[]);s['owns_router']=False
+        s['status_warning']=str(exc);s.setdefault('models',[]);s['owns_router']=False;s['api_version']=API_VERSION
     return s
-
-@router.get('/projectors')
-def projectors():
-    """Read-only candidates next to the exact selected Hermes model."""
-    try:
-        _,_,_,models,mid=environment()
-        selected=next((m for m in models if m['id']==mid),None)
-        if not selected:return {'candidates':[],'model_id':None}
-        return {'candidates':bench.ms.projector_candidates(selected['model_path']),
-                'model_id':mid}
-    except Exception as exc:raise HTTPException(409,str(exc))
 
 @router.post('/select')
 def select(body:dict):

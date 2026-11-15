@@ -11,6 +11,7 @@ import os
 from functools import lru_cache
 from pathlib import Path
 import re
+import struct
 
 
 def atomic_write(path: Path, blob: bytes) -> None:
@@ -78,21 +79,87 @@ def assert_gguf(path:Path|None, field:str)->None:
         if f.read(4)!=b'GGUF': raise RuntimeError(f'{field} is not a GGUF file: {path}')
 
 
+def _read_embedded_gguf_metadata(path:Path)->bool:
+    """Inspect GGUF KV header only, never model tensor payload or filename.
+
+    The native Hermes header reader may omit newer vendor keys; this fallback
+    reads numeric *.nextn_predict_layers directly from the GGUF header. Bounds
+    ensure a malformed file cannot force unbounded scans or allocations.
+    """
+    primitives={0:1,1:1,2:2,3:2,4:4,5:4,6:4,7:1,10:8,11:8,12:8}
+    with path.open('rb') as f:
+        read_total=0
+        def read(n):
+            nonlocal read_total
+            if n<0 or n>8*1024*1024 or read_total+n>128*1024*1024:
+                raise ValueError('GGUF header exceeds scan limit')
+            out=f.read(n)
+            if len(out)!=n:raise ValueError('truncated GGUF')
+            read_total+=n
+            return out
+        def number(fmt):return struct.unpack('<'+fmt,read(struct.calcsize('<'+fmt)))[0]
+        def skip(n):
+            nonlocal read_total
+            if n<0 or read_total+n>128*1024*1024:raise ValueError('GGUF metadata too large')
+            f.seek(n,1);read_total+=n
+        def value(typ,keep=False):
+            if typ in primitives:
+                if keep and typ in (0,1,2,3,4,5,10,11):
+                    codes={0:'B',1:'b',2:'H',3:'h',4:'I',5:'i',10:'Q',11:'q'}
+                    return number(codes[typ])
+                skip(primitives[typ]);return None
+            if typ==8:
+                size=number('Q')
+                if size>8*1024*1024:raise ValueError('oversize GGUF string')
+                return read(size).decode('utf-8','replace') if keep else skip(size)
+            if typ==9:
+                item_type=number('I');count=number('Q')
+                if count>10_000_000:raise ValueError('oversize GGUF array')
+                if item_type in primitives:
+                    skip(count*primitives[item_type]);return None
+                if item_type==8:
+                    for _ in range(count): value(8)
+                    return None
+            raise ValueError('unsupported GGUF metadata type')
+        if read(4)!=b'GGUF':return False
+        version=number('I')
+        if version not in (2,3):return False
+        number('Q')  # tensors
+        fields=number('Q')
+        if fields>1_000_000:return False
+        for _ in range(fields):
+            n=number('Q')
+            if n>1024:raise ValueError('GGUF key too long')
+            key=read(n).decode('utf-8','replace')
+            typ=number('I')
+            if key.endswith('.nextn_predict_layers'):
+                result=value(typ,True)
+                if isinstance(result,int) and result>0:return True
+            else:value(typ)
+    return False
+
+
 @lru_cache(maxsize=128)
 def _embedded_metadata(gguf:str,mtime_ns:int,size:int)->bool:
+    # If Hermes' metadata reader knows the architecture, prefer it; its
+    # absence or incompatible schema must not hide verified native GGUF keys.
     try:
         from hermes_cli.local_runtime.gguf import read_gguf_header
-        header=read_gguf_header(gguf)
-        architecture=str(header.metadata.get('general.architecture',''))
-        return int(header.metadata.get(architecture+'.nextn_predict_layers',0))>0
-    except (ImportError,ValueError,OSError,TypeError): return False
+        metadata=read_gguf_header(gguf).metadata
+        architecture=str(metadata.get('general.architecture',''))
+        if int(metadata.get(architecture+'.nextn_predict_layers',0))>0:return True
+        if any(k.endswith('.nextn_predict_layers') and int(v)>0
+               for k,v in metadata.items()):return True
+    except (ImportError,AttributeError,ValueError,OSError,TypeError):pass
+    try:return _read_embedded_gguf_metadata(Path(gguf))
+    except (OSError,ValueError,OverflowError,struct.error):return False
 
 def detect_embedded_mtp(gguf:str)->bool:
-    """Use native GGUF metadata, cached by file identity; never infer from names."""
+    """Confirm embedded MTP by GGUF header; unknown stays unconfirmed."""
     path=Path(gguf)
     try:
         info=path.stat()
-        if not path.is_file(): return False
+        if not path.is_file():return False
         return _embedded_metadata(str(path.resolve()),info.st_mtime_ns,info.st_size)
     except (ValueError,OSError):return False
 
@@ -148,6 +215,29 @@ def projector_candidates(model_path: str, directory: str | None = None) -> list[
                        'score':score,'recommendation':'strong' if score>=75 else 'possible'})
     result.sort(key=lambda c:(-c['score'],c['name'].casefold()))
     return result[:30]
+
+
+def head_candidates(model_path:str,directory:str|None=None)->list[dict]:
+    """Offer plausible external MTP GGUFs only; no automatic binding."""
+    model=Path(model_path)
+    folder=Path(directory) if directory else model.parent
+    if not folder.is_dir():return []
+    try:items=sorted(folder.iterdir(),key=lambda p:p.name.casefold())
+    except OSError:return []
+    if len(items)>1000:return []
+    out=[]
+    for item in items:
+        if item.suffix.casefold()!='.gguf' or not re.search(r'(^|[-_.])(mtp|draft|nextn)([-_.]|$)',item.stem,re.I):continue
+        if 'mmproj' in item.name.casefold():continue
+        try:
+            if not item.is_file() or item.resolve()==model.resolve():continue
+            with item.open('rb') as f:
+                if f.read(4)!=b'GGUF':continue
+            score=_projector_score(model.stem,item.stem)
+            out.append({'path':str(item.resolve()),'name':item.name,'size':item.stat().st_size,
+                        'score':score,'recommendation':'strong' if score>=75 else 'possible'})
+        except (OSError,ValueError):continue
+    return sorted(out,key=lambda c:(-c['score'],c['name'].casefold()))[:30]
 
 
 def model_specs(preset_path:Path, companion_path:Path)->list[dict]:

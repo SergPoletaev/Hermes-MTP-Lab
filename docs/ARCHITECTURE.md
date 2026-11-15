@@ -14,13 +14,12 @@ The Git repository root is the self-contained Hermes hybrid plugin (`plugin.yaml
 
 ## Model-agnostic selection, pairing and recovery
 
-`dashboard/model_support.py` reads **Hermes managed model presets** and the optional `model-companions.json` mapping. The user selects an exact model ID and can explicitly supply its compatible separate MTP-head GGUF and optional vision projector; there is no filename-based auto-pairing. Models with embedded MTP are eligible when the native preset or supported GGUF metadata confirms it. A missing projector simply removes image workloads; missing MTP support blocks the benchmark.
+`dashboard/model_support.py` reads **Hermes managed model presets** and the optional `model-companions.json` mapping. The user selects an exact model ID and can select a compatible separate MTP-head GGUF and optional vision projector using discovered choices or the native folder picker; nearby candidate files are ranked by filename but never automatically paired. Models with embedded MTP are eligible when the native preset or supported GGUF metadata confirms it. A missing projector simply removes image workloads; missing MTP support blocks the benchmark.
 
 The benchmark copies the original `presets.ini` bytes to a unique backup, writes an interrupt-recovery marker, modifies **only the selected model section** for an OFF or ON phase, calls the existing `sup.reload_presets()` on the owned idle router, and verifies the child process flags plus speculative token acceptance. On completion it restores the exact original preset bytes and reloads the router. It does not alter unrelated model sections or reconfigure cloud providers. Manual toggles are temporary and may be reset by the native Hermes planner.
 
 `model-companions.json` is only changed by an explicit user action saving a head/projector mapping; a backup of that file is created first. Declaring an MTP head does not prove architectural compatibility: actual llama.cpp loading and token acceptance remain mandatory.
 
-Previous model-specific Gemma benchmark data serves solely as example evidence, not as a compatibility constraint.
 
 ## Limits
 
