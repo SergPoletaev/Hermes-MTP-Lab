@@ -115,15 +115,33 @@ class WholeRepositoryTests(unittest.TestCase):
         self.assertIn("'original':'draft-mtp'", core)
         self.assertIn("state.pending_original_mtp===false?'OFF':'—'", js)
 
-    def test_publish_is_non_destructive_and_requires_credentials(self):
-        p = (ROOT / 'Publish-Hermes-MTP-Lab.ps1').read_text(encoding='utf-8-sig')
-        self.assertIn('git', p.lower())
-        self.assertIn('clone --quiet --branch', p)
-        self.assertIn('push origin', p)
-        self.assertNotIn('--force', p)
-        self.assertNotIn('reset --hard', p)
-        self.assertNotIn('git init', p)
-        self.assertIn('hermes-mtp-lab', p)
+    def test_owner_publish_tools_never_enter_public_source(self):
+        forbidden = (
+            'Publish-Hermes-MTP-Lab.cmd',
+            'Publish-Hermes-MTP-Lab.ps1',
+            'docs/PUBLISH_WITH_GITHUB_DESKTOP_RU.md',
+        )
+        for name in forbidden:
+            with self.subTest(path=name):
+                self.assertFalse((ROOT / name).exists())
+        # The Windows job must validate the plugin installer, not a private owner-side script.
+        workflow = (ROOT / '.github/workflows/ci.yml').read_text(encoding='utf-8')
+        self.assertIn('Install-Hermes-MTP-Lab.ps1', workflow)
+        self.assertNotIn('Publish-Hermes-MTP-Lab', workflow)
+        verifier = (ROOT / 'tools/verify_repo.py').read_text(encoding='utf-8')
+        self.assertIn('forbidden_public', verifier)
+
+    def test_both_release_lists_exclude_publishers(self):
+        import sys
+        sys.path.insert(0, str(ROOT / 'tools'))
+        try:
+            from package_release import portable_list, source_list
+            for files in (portable_list(), source_list()):
+                self.assertTrue(files)
+                self.assertFalse(any('Publish-Hermes-MTP-Lab' in str(path) for path in files))
+                self.assertTrue(all(path.is_file() for path in files))
+        finally:
+            sys.path.remove(str(ROOT / 'tools'))
 
 if __name__ == '__main__':
     unittest.main()

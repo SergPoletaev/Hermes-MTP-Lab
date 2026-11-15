@@ -11,5 +11,3 @@
 For suspected security issues, report privately through GitHub Security Advisories when available. Otherwise contact the repository owner through a private channel; do **not** publish exploit details in a public Issue.
 
 Only this release's project files are covered by this repository's license; Hermes and GGUF model components retain their own terms.
-
-The optional GitHub publishing script uses Git credentials configured on the user machine. It never contains a token, does not use force-push, and does not modify a local Hermes installation.

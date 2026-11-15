@@ -11,7 +11,6 @@ EXPECT = [
     'LICENSE', 'SECURITY.md', 'CONTRIBUTING.md', 'CHANGELOG.md',
     'RELEASE_NOTES.md', 'requirements-ci.txt',
     'Install-Hermes-MTP-Lab.cmd', 'Install-Hermes-MTP-Lab.ps1',
-    'Publish-Hermes-MTP-Lab.cmd', 'Publish-Hermes-MTP-Lab.ps1',
     'plugin.yaml', '__init__.py',
     'desktop/plugin.js', 'dashboard/manifest.json',
     'dashboard/plugin_api.py', 'dashboard/bench_core.py', 'dashboard/model_support.py',
@@ -22,7 +21,7 @@ EXPECT = [
     'tests/test_progress_status.py', 'tests/test_repo_layout.py',
     'tests/test_repo_completeness.py',
     'docs/ARCHITECTURE.md', 'docs/BENCHMARK_METHODOLOGY.md',
-    'docs/PUBLISH_WITH_GITHUB_DESKTOP_RU.md', 'docs/EXAMPLE_RESULTS_2026-11-15.md',
+    'docs/EXAMPLE_RESULTS_2026-11-15.md',
     'tools/verify_repo.py', 'tools/package_release.py', 'tools/check_dist.py'
 ]
 
@@ -38,8 +37,6 @@ def check():
     texts = [
         ('Install-Hermes-MTP-Lab.cmd', r'v'+VERSION),
         ('Install-Hermes-MTP-Lab.ps1', r'v'+VERSION),
-        ('Publish-Hermes-MTP-Lab.cmd', r'v'+VERSION),
-        ('Publish-Hermes-MTP-Lab.ps1', r'v'+VERSION),
         ('README.md', VERSION), ('CHANGELOG.md', VERSION),
         ('RELEASE_NOTES.md', VERSION), ('desktop/plugin.js', 'v'+VERSION)
     ]
@@ -47,6 +44,14 @@ def check():
         if needle not in (ROOT/f).read_text(encoding='utf-8-sig'):
             problems.append(f'Version marker missing from {f}: {needle}')
     if (ROOT/'README_RU.md').exists():problems.append('README_RU.md must not exist: use the single four-language README.md')
+    # Publishing helpers are owner-side tools, never part of public source or CI.
+    forbidden_public = ('Publish-Hermes-MTP-Lab.cmd', 'Publish-Hermes-MTP-Lab.ps1', 'docs/PUBLISH_WITH_GITHUB_DESKTOP_RU.md')
+    for private_path in forbidden_public:
+        if (ROOT/private_path).exists():
+            problems.append('Owner-side publishing file leaked into the public repository: '+private_path)
+    for public_text in ('README.md', 'RELEASE_NOTES.md', 'CHANGELOG.md', 'SECURITY.md', 'docs/ARCHITECTURE.md', '.github/workflows/ci.yml'):
+        if 'Publish-Hermes-MTP-Lab' in (ROOT/public_text).read_text(encoding='utf-8-sig'):
+            problems.append('Public repository still references owner-side publishing script: '+public_text)
     attrs=(ROOT/'.gitattributes').read_text(encoding='utf-8')
     for rule in ('* text=auto eol=lf', '*.cmd text eol=crlf', '*.png binary', '*.jpg binary'):
         if rule not in attrs:

@@ -14,5 +14,5 @@
 - Native relative mmproj/MTP-head paths now resolve next to the selected model, with GGUF signature checks.
 - Atomic single-benchmark guard avoids competing preset modifications on parallel start requests.
 - Recovery markers now record the original MTP state; unknown legacy states are no longer falsely labelled OFF.
-- One-click full-repository publishing script, preserving existing Git history and never force-pushing.
+- CI is independent of owner-only Git publishing utilities; they are not shipped in the public repository.
 - Release archives validated with build tests; no manual SHA manifest.

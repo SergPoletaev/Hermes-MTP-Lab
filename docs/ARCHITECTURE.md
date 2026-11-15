@@ -28,6 +28,6 @@ The benchmark copies the original `presets.ini` bytes to a unique backup, writes
 - The test context is the lesser of 32768 and the selected model native context. The report records discovered runtime parameters and warns when equality cannot be verified.
 - Complete user-interface Auto/Native/Text performance testing requires separate tests against Hermes orchestration; this plugin only checks the local inference route.
 
-## Publication and CI
+## Repository validation and CI
 
-The complete source repository has a Windows Git publisher that clones `main` into a temporary directory, removes only the old nested plugin folder, commits the entire audited tree and uses an ordinary non-force push. `requirements-ci.txt` supplies FastAPI and HTTPX for clean GitHub runners. The source builder uses the verifier’s explicit file allowlist; every release entry is compared byte-for-byte against the audited source.
+The public repository contains the Hermes plugin, installers, documentation, tests and CI workflows only. Owner-side publishing credentials and publishing scripts are not part of the repository and are not CI dependencies. `requirements-ci.txt` supplies FastAPI and HTTPX for clean GitHub runners. The source builder uses the verifier’s explicit file allowlist; every release entry is compared byte-for-byte against the audited source. Deleting or excluding private publishing scripts must not make any CI job fail.
