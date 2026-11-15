@@ -184,7 +184,7 @@ function LabView({ ctx }) {
     !connected?h('section',{style:{...block,borderColor:'#d59c45'}},h('strong',{},tr('connectTitle')),h('p',{style:muted},tr('connectHelp')),h('button',{style:btn,onClick:()=>load()},tr('checkConnection'))):null,
     connected&&!state?.owns_router?h('section',{style:{...block,borderColor:'#d59c45'}},h('strong',{},tr('notOwner')),h('p',{style:muted},tr('notOwnerHelp')),h('button',{style:btn,onClick:()=>load()},tr('refresh'))):null,
     connected&&!apiReady?h('section',{style:{...block,borderColor:'#d59c45'}},h('strong',{},tr('versionMismatch'))):null,
-    state?.recovery_needed&&!running?h('section',{style:{...block,borderColor:'var(--ui-danger, #bf7777)'}},h('strong',{},tr('interrupted')),h('p',{style:muted},tr('interruptedHelp',state.pending_original_mtp?'ON':'OFF')),h('button',{style:btn,disabled:busy,onClick:()=>act('/recover',{})},tr('restore'))):null,
+    state?.recovery_needed&&!running?h('section',{style:{...block,borderColor:'var(--ui-danger, #bf7777)'}},h('strong',{},tr('interrupted')),h('p',{style:muted},tr('interruptedHelp',state.pending_original_mtp===true?'ON':state.pending_original_mtp===false?'OFF':'—')),h('button',{style:btn,disabled:busy,onClick:()=>act('/recover',{})},tr('restore'))):null,
     h('section',{style:block},
       h('label',{style:{display:'block',fontWeight:650}},tr('chooseModel')),
       h('select',{value:state?.model||'',disabled:busy||running||!connected||!apiReady,

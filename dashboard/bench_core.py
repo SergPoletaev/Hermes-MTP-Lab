@@ -255,18 +255,28 @@ class BenchmarkState:
 STATE=BenchmarkState()
 
 def execute_benchmark(model_id:str,trials:int=1):
-    if STATE.read()['state']=='running':raise RuntimeError('Benchmark already running')
     trials=max(1,min(3,int(trials)))
     sup,preset,comp,models=get_model_environment()
     model=select_spec(models,model_id)
     tasks=[t for t in TASKS if model['has_mmproj'] or not t['image']]
     total=2*trials*len(tasks)
-    STATE.cancel.clear()
-    STATE.update(state='running',stage='Checking model',model_spec=model,done=0,total=total,rows=[],summary=[],error=None,report_path=None,
-                 selected_model=model_id,run_started_at=time.time(),stage_started_at=time.time(),step_kind='checking',
-                 phase=None,current_task=None,trial=None,trials=trials,live_port=None,live_baseline=None,live_token_limit=None)
+    # Reserve a single benchmark slot atomically. Two near-simultaneous /start
+    # calls must never run competing workers that both modify Hermes presets.
+    with STATE.lock:
+        if STATE.data['state']=='running':
+            raise RuntimeError('Benchmark already running')
+        STATE.cancel.clear()
+        STATE.data.update(state='running',stage='Checking model',model_spec=model,done=0,total=total,
+                          rows=[],summary=[],error=None,report_path=None,
+                          selected_model=model_id,run_started_at=time.time(),stage_started_at=time.time(),
+                          step_kind='checking',phase=None,current_task=None,trial=None,trials=trials,
+                          live_port=None,live_baseline=None,live_token_limit=None)
     thread=threading.Thread(target=_run,args=(model_id,trials),daemon=True,name='hermes-mtp-lab-benchmark')
-    thread.start()
+    try:
+        thread.start()
+    except Exception:
+        STATE.update(state='error',stage='Worker start failed')
+        raise
     return total
 
 def _run(model_id:str,trials:int):
@@ -285,12 +295,14 @@ def _run(model_id:str,trials:int):
         if native<=0:raise RuntimeError('Native context not specified; cannot benchmark safely')
         ctx=min(native,BENCH_CTX)
         if ctx<512:raise RuntimeError('Context too small for benchmark')
-        backup=preset.with_name(preset.name+'.mtp-lab-backup-'+datetime.now().strftime('%Y%m%d-%H%M%S-%f'))
-        backup.write_bytes(original)
         from hermes_cli.local_runtime.bootstrap import assets_dir
         marker=Path(assets_dir())/'.mtp-lab-pending.json'
         if marker.exists():raise RuntimeError('Unresolved prior benchmark marker; restore before starting another test')
-        ms.atomic_write(marker,json.dumps({'schema':2,'model':model_id,'backup':str(backup),
+        backup=preset.with_name(preset.name+'.mtp-lab-backup-'+datetime.now().strftime('%Y%m%d-%H%M%S-%f'))
+        backup.write_bytes(original)
+        ms.atomic_write(marker,json.dumps({'schema':2,'model':model_id,
+                                           'original':'draft-mtp' in [x.strip() for x in section.get('spec-type','').split(',')],
+                                           'backup':str(backup),
                                            'sha256':hashlib.sha256(original).hexdigest()}).encode('utf-8'))
         tasks=[t for t in TASKS if model['has_mmproj'] or not t['image']]
         img64=None

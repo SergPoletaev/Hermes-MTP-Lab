@@ -11,6 +11,7 @@ EXPECT = [
     'LICENSE', 'SECURITY.md', 'CONTRIBUTING.md', 'CHANGELOG.md',
     'RELEASE_NOTES.md', 'requirements-ci.txt',
     'Install-Hermes-MTP-Lab.cmd', 'Install-Hermes-MTP-Lab.ps1',
+    'Publish-Hermes-MTP-Lab.cmd', 'Publish-Hermes-MTP-Lab.ps1',
     'plugin.yaml', '__init__.py',
     'desktop/plugin.js', 'dashboard/manifest.json',
     'dashboard/plugin_api.py', 'dashboard/bench_core.py', 'dashboard/model_support.py',
@@ -19,6 +20,7 @@ EXPECT = [
     'tests/test_desktop_registration.cjs',
     'tests/test_full_mock.py',
     'tests/test_progress_status.py', 'tests/test_repo_layout.py',
+    'tests/test_repo_completeness.py',
     'docs/ARCHITECTURE.md', 'docs/BENCHMARK_METHODOLOGY.md',
     'docs/PUBLISH_WITH_GITHUB_DESKTOP_RU.md', 'docs/EXAMPLE_RESULTS_2026-11-15.md',
     'tools/verify_repo.py', 'tools/package_release.py', 'tools/check_dist.py'
@@ -36,6 +38,8 @@ def check():
     texts = [
         ('Install-Hermes-MTP-Lab.cmd', r'v'+VERSION),
         ('Install-Hermes-MTP-Lab.ps1', r'v'+VERSION),
+        ('Publish-Hermes-MTP-Lab.cmd', r'v'+VERSION),
+        ('Publish-Hermes-MTP-Lab.ps1', r'v'+VERSION),
         ('README.md', VERSION), ('CHANGELOG.md', VERSION),
         ('RELEASE_NOTES.md', VERSION), ('desktop/plugin.js', 'v'+VERSION)
     ]
@@ -53,6 +57,8 @@ def check():
         problems.append('Obsolete BUILD-MANIFEST.json: remove manual source checksum tracking')
     if 'fastapi==0.128.2' not in (ROOT/'requirements-ci.txt').read_text(encoding='utf-8'):
         problems.append('FastAPI test dependency missing: requirements-ci.txt')
+    if 'httpx==0.28.1' not in (ROOT/'requirements-ci.txt').read_text(encoding='utf-8'):
+        problems.append('HTTPX TestClient dependency missing: requirements-ci.txt')
     if 'python -m pip install -r requirements-ci.txt' not in (ROOT/'.github/workflows/ci.yml').read_text(encoding='utf-8'):
         problems.append('CI does not install the Python API test dependencies')
     readme=(ROOT/'README.md').read_text(encoding='utf-8')
@@ -77,9 +83,12 @@ def check():
     img=ROOT/'data/benchmark_scene.jpg'
     if img.stat().st_size < 10000 or img.read_bytes()[:3]!=b'\xff\xd8\xff':
         problems.append('Benchmark JPG absent/invalid')
+    allowed=set(EXPECT)
     for p in ROOT.rglob('*'):
         if not p.is_file() or any(x in p.parts for x in ('__pycache__','dist','.git')):continue
         rel=p.relative_to(ROOT).as_posix()
+        if rel not in allowed and not any(x in p.relative_to(ROOT).parts for x in ('build', 'node_modules', '.pytest_cache')) and p.suffix not in ('.pyc', '.pyo', '.zip'):
+            problems.append('Unreviewed file would enter the source tree: '+rel)
         if p.name in ('config.yaml','model-companions.json','server.json','.env'):
             problems.append('Sensitive machine-specific file in tree: '+rel)
         if p.suffix.lower() in ('.gguf','.safetensors','.key','.pem','.p12','.pfx'):

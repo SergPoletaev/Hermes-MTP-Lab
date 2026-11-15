@@ -71,6 +71,37 @@ def resolve_file(raw:str, asset_dir:Path)->Path|None:
     return path
 
 
+def resolve_native_companion(raw: str, model_path: str, asset_dir: Path) -> Path | None:
+    """Resolve a Hermes native companion relative to its model when needed.
+
+    Hermes presets can store the projector as a bare filename even though the
+    file sits next to the model GGUF, rather than inside Hermes' assets_dir.
+    Explicit user companions keep their existing assets-relative semantics.
+    """
+    if not raw:
+        return None
+    native = Path(raw).expanduser()
+    if native.is_absolute():
+        return native
+    model_side = Path(model_path).expanduser().parent / native
+    asset_side = asset_dir / native
+    if model_side.is_file():
+        return model_side
+    if asset_side.is_file():
+        return asset_side
+    return model_side  # Missing stays missing; never claim a projector exists.
+
+
+def is_gguf_file(path: Path | None) -> bool:
+    if not path or path.suffix.casefold() != '.gguf':
+        return False
+    try:
+        with path.open('rb') as source:
+            return source.read(4) == b'GGUF'
+    except OSError:
+        return False
+
+
 def assert_gguf(path:Path|None, field:str)->None:
     if path is None: return
     if path.suffix.lower()!='.gguf' or not path.is_file():
@@ -246,8 +277,15 @@ def model_specs(preset_path:Path, companion_path:Path)->list[dict]:
     for model in models:
         entry=obj['models'].get(model['id'],{})
         if not isinstance(entry,dict): entry={}
-        head=resolve_file(entry.get('mtp_head') or (model['native_draft'] if model['native_mtp'] else ''),companion_path.parent)
-        projector=resolve_file(entry.get('mmproj') or model['mmproj'],companion_path.parent)
+        explicit_head = entry.get('mtp_head')
+        head = (resolve_file(explicit_head,companion_path.parent)
+                if explicit_head else
+                resolve_native_companion(model['native_draft'] if model['native_mtp'] else '',
+                                         model['model_path'],companion_path.parent))
+        explicit_projector = entry.get('mmproj')
+        projector = (resolve_file(explicit_projector,companion_path.parent)
+                     if explicit_projector else
+                     resolve_native_companion(model['mmproj'], model['model_path'], companion_path.parent))
         # Native preset settings alone do not prove that model weights embed MTP.
         metadata_embedded=detect_embedded_mtp(model['model_path']) if not head else False
         preset_embedded=model['native_mtp'] and not model['native_draft'] and not head
@@ -257,12 +295,12 @@ def model_specs(preset_path:Path, companion_path:Path)->list[dict]:
         except (TypeError,ValueError): draft_n=3
         model.update({'mtp_head':str(head) if head else '', 'mmproj':str(projector) if projector else '',
                      'draft_n':draft_n,
-                     'has_mmproj':bool(projector and projector.is_file()),
+                     'has_mmproj':is_gguf_file(projector),
                      'embedded_mtp':embedded,
                      'embedded_verified':metadata_embedded,
                      'mtp_evidence': 'gguf' if metadata_embedded else 'preset' if preset_embedded else 'external' if head else 'none',
                      'mtp_kind':'external' if head else 'embedded' if embedded else 'unsupported',
-                     'mtp_supported':bool((head and head.is_file()) or embedded),
+                     'mtp_supported':bool(is_gguf_file(head) or embedded),
                      'persistent_flag':entry.get('enable_mtp') if type(entry.get('enable_mtp')) is bool else None})
     return models
 

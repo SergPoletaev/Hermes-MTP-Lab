@@ -19,13 +19,10 @@ SKIP_DIR={'__pycache__','.git','.idea','.vscode','.pytest_cache','dist','build',
 SKIP_EXT={'.pyc','.pyo','.zip','.tmp','.log'}
 
 def source_list():
-    result=[]
-    for p in sorted(ROOT.rglob('*')):
-        if not p.is_file() or any(part in SKIP_DIR for part in p.relative_to(ROOT).parts):continue
-        if p.suffix.lower() in SKIP_EXT:continue
-        if p.name.startswith('.mtp-lab-pending'):continue
-        result.append(p)
-    return result
+    # Only audited source files are packaged. Untracked files, local state,
+    # credentials and old archives must never enter a public release by accident.
+    from verify_repo import EXPECT
+    return [ROOT / name for name in sorted(EXPECT)]
 
 def portable_list():
     files=[ROOT/x for x in INSTALL_TOP]

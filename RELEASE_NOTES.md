@@ -10,6 +10,9 @@ Hermes Desktop plugin for model-independent local MTP OFF/ON benchmarking.
 - RU/EN Desktop interface; quick and full text/vision benchmarking with preconfigured workloads, live stages, accepted/drafted token metrics, CSV/JSON/Markdown reports.
 - Restore original selected-model presets after each test and support recovery after interruption.
 - Install directly from GitHub repository root or from the portable Windows installer.
+- Publish a complete repository via `Publish-Hermes-MTP-Lab.cmd`, with no manual file editing or `.git` folder in the ZIP.
+- CI uses pinned FastAPI + HTTPX dependencies; all source files are allowlisted and checked.
+- Fix native relative model-companion paths and prevent simultaneous benchmark workers.
 - No mandatory per-source SHA-256 manifest or manual checksum regeneration.
 
 ## Files

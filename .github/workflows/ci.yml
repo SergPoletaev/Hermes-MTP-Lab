@@ -60,4 +60,6 @@ jobs:
           $errors = $null
           [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'Install-Hermes-MTP-Lab.ps1').Path, [ref]$tokens, [ref]$errors) | Out-Null
           if ($errors.Count -gt 0) { $errors | Format-List; exit 1 }
-          Write-Host 'PowerShell syntax PASS (real Hermes install not performed)'
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path 'Publish-Hermes-MTP-Lab.ps1').Path, [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -gt 0) { $errors | Format-List; exit 1 }
+          Write-Host 'PowerShell installer/publisher syntax PASS (no live Hermes/GitHub deployment performed)'

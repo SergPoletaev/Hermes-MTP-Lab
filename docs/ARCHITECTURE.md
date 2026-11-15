@@ -10,7 +10,7 @@ Hermes local runtime supervisor (must be owned by this backend)
 Local /chat/completions and /metrics
 ```
 
-The Git repository root is the self-contained Hermes hybrid plugin (`plugin.yaml`, `__init__.py`, `desktop/`, `dashboard/`). Hermes loads `desktop/plugin.js` for the sidebar route, and the Python API exposes `/status`, `/start`, `/cancel`, `/toggle`, `/recover` within the Hermes plugin framework.
+The Git repository root is the self-contained Hermes hybrid plugin (`plugin.yaml`, `__init__.py`, `desktop/`, `dashboard/`). Hermes loads `desktop/plugin.js` for the sidebar route, and the Python API exposes `/status`, `/select`, `/configure`, `/start`, `/cancel`, `/toggle`, `/recover` within the Hermes plugin framework.
 
 ## Model-agnostic selection, pairing and recovery
 
@@ -27,3 +27,7 @@ The benchmark copies the original `presets.ini` bytes to a unique backup, writes
 - Backend metrics are cumulative per-server counters; concurrent inference can make deltas unreliable. Run no other chat requests during the benchmark.
 - The test context is the lesser of 32768 and the selected model native context. The report records discovered runtime parameters and warns when equality cannot be verified.
 - Complete user-interface Auto/Native/Text performance testing requires separate tests against Hermes orchestration; this plugin only checks the local inference route.
+
+## Publication and CI
+
+The complete source repository has a Windows Git publisher that clones `main` into a temporary directory, removes only the old nested plugin folder, commits the entire audited tree and uses an ordinary non-force push. `requirements-ci.txt` supplies FastAPI and HTTPX for clean GitHub runners. The source builder uses the verifier’s explicit file allowlist; every release entry is compared byte-for-byte against the audited source.

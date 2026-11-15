@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.3 — Companion picker and backend synchronization
+## 0.3.3 — Companion picker, CI and complete repository publication
 
 - Model-independent MTP OFF/ON benchmark, with original Hermes preset restoration.
 - Automatic mmproj and MTP-head candidates next to the selected model, without silently linking files.
@@ -10,4 +10,9 @@
 - Embedded MTP verified by GGUF header metadata, native preset evidence shown separately, external MTP-head stated explicitly.
 - RU/EN Desktop UI, four-language README, quick/full benchmark, reporting, crash recovery.
 - Root-level `plugin.yaml` and `desktop/plugin.js` for direct Install from Git.
+- CI includes missing HTTPX `TestClient` dependency and verifies every approved source file.
+- Native relative mmproj/MTP-head paths now resolve next to the selected model, with GGUF signature checks.
+- Atomic single-benchmark guard avoids competing preset modifications on parallel start requests.
+- Recovery markers now record the original MTP state; unknown legacy states are no longer falsely labelled OFF.
+- One-click full-repository publishing script, preserving existing Git history and never force-pushing.
 - Release archives validated with build tests; no manual SHA manifest.

@@ -38,6 +38,8 @@
 
 Hermes Desktop → **Capabilities → Plugins → Install from Git**: вставьте **`https://github.com/SergPoletaev/Hermes-MTP-Lab.git`**. Плагин находится в корне репозитория (`plugin.yaml`, `desktop/plugin.js`), поэтому никакие `#подпапка` не нужны. Выберите компоненты и подтвердите установку; включите их при необходимости. Если версия уже установлена, подтвердите её замену только после завершения теста. **После обновления полностью закройте Hermes (включая трей) и запустите заново:** Python-маршруты подхватываются gateway при запуске. Поиск рядом с моделью использует каталог GGUF, указанный в пресете Hermes; если файл исходно лежал в другом каталоге, выберите его папку кнопкой обзора.
 
+**Для владельца репозитория:** полная поставка включает `Publish-Hermes-MTP-Lab.cmd`, который автоматически публикует весь исходный код в существующую ветку `main` через Git/GitHub Desktop. Ручная замена файлов или папка `.git` в скачанном ZIP не нужны. Подробности: [публикация полного репозитория](docs/PUBLISH_WITH_GITHUB_DESKTOP_RU.md).
+
 ### Установка из GitHub Release на Windows
 
 1. Скачайте **`Hermes_MTP_Lab_v0.3.3_PORTABLE_INSTALL.zip`** в [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) и **полностью распакуйте** в любую папку.
@@ -84,6 +86,8 @@ The plugin has **no model-family, quantization or fixed-name restriction**. Sele
 
 In Hermes Desktop open **Capabilities → Plugins → Install from Git**, then enter **`https://github.com/SergPoletaev/Hermes-MTP-Lab.git`**. The plugin is rooted at `plugin.yaml` and `desktop/plugin.js`; no `#subfolder` suffix is needed. Select the components and confirm installation. If an earlier version is installed, complete any running benchmark before replacing it. **Quit Hermes completely (including the tray) and reopen it after the update** so the Python API routes reload. Nearby discovery uses the GGUF location from the Hermes preset; if your downloaded model or companions are stored in another folder, use the native folder picker.
 
+**For repository maintainers:** the complete distribution includes `Publish-Hermes-MTP-Lab.cmd`, which automatically publishes the full source tree to the existing `main` branch using Git/GitHub Desktop authentication. No manual file edits or pre-existing `.git` folder in the ZIP are required. See [complete repository publishing](docs/PUBLISH_WITH_GITHUB_DESKTOP_RU.md).
+
 ### Windows installation from a GitHub release
 
 1. Download `Hermes_MTP_Lab_v0.3.3_PORTABLE_INSTALL.zip` from [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) and extract it fully to any folder.
@@ -129,6 +133,8 @@ This is an independent, unofficial community plugin for [NousResearch Hermes Age
 ### 直接通过 Git 安装（推荐）
 
 在 Hermes Desktop 中打开 **Capabilities → Plugins → Install from Git**，输入 **`https://github.com/SergPoletaev/Hermes-MTP-Lab.git`**。`plugin.yaml` 和 `desktop/plugin.js` 位于仓库根目录，无需 `#子目录` 后缀。选择所需组件并确认安装；如已有旧版本，请先结束正在运行的测试。
+
+**仓库维护者：** 完整压缩包包含 `Publish-Hermes-MTP-Lab.cmd`，使用已授权的 Git/GitHub Desktop 自动更新现有 `main` 分支中的全部源文件。无需手动修改文件，也无需压缩包内附带 `.git` 目录。详情请参阅[完整仓库发布说明](docs/PUBLISH_WITH_GITHUB_DESKTOP_RU.md)。
 
 ### Windows 安装
 
@@ -178,6 +184,8 @@ This is an independent, unofficial community plugin for [NousResearch Hermes Age
 ### Git से सीधे स्थापना (अनुशंसित)
 
 Hermes Desktop → **Capabilities → Plugins → Install from Git** खोलें और **`https://github.com/SergPoletaev/Hermes-MTP-Lab.git`** दर्ज करें। `plugin.yaml` और `desktop/plugin.js` रिपॉज़िटरी के मूल फ़ोल्डर में हैं; `#subfolder` की ज़रूरत नहीं। घटक चुनें और स्थापना की पुष्टि करें। पुराने प्लगइन को बदलने से पहले चल रहे बेंचमार्क को पूरा करें।
+
+**रिपॉज़िटरी अनुरक्षक:** पूर्ण पैकेज में `Publish-Hermes-MTP-Lab.cmd` शामिल है, जो Git/GitHub Desktop प्रमाणीकरण का उपयोग करके मौजूदा `main` शाखा में पूरे स्रोत को प्रकाशित करता है। फ़ाइलें हाथ से बदलने या ZIP में `.git` फ़ोल्डर की आवश्यकता नहीं है। [पूर्ण प्रकाशन निर्देश](docs/PUBLISH_WITH_GITHUB_DESKTOP_RU.md) देखें।
 
 ### Windows पर स्थापना
 
