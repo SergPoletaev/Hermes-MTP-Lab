@@ -6,7 +6,7 @@
 
 ![Реальный интерфейс Hermes MTP Lab: панель управления MTP и результаты трёхпроходного теста / Actual MTP Lab dashboard and benchmark results](docs/assets/mtp-lab-dashboard.png)
 
-*Скриншот реального теста на Hermes Desktop с плагином v0.2.1; v0.3.0 добавляет выбор моделей, настройку компаньонов и RU/EN-интерфейс. / Real Hermes Desktop screenshot from v0.2.1; v0.3.0 adds model selection, companion configuration and RU/EN UI.*
+*Скриншот реального теста на Hermes Desktop. / Real Hermes Desktop screenshot.*
 
 **Навигация / Navigation / 导航 / नेविगेशन:** [Русский](#ru) · [English](#en) · [简体中文](#zh) · [हिन्दी](#hi) · [Конец / End](#end)
 
