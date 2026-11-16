@@ -1,9 +1,9 @@
 @echo off
 setlocal DisableDelayedExpansion
-title Hermes MTP Lab - installer v0.3.3
+title Hermes MTP Lab - installer v0.4.0
 chcp 65001 >nul
 echo ==============================================
-echo  HERMES MTP LAB v0.3.3 - PLUGIN INSTALLER
+echo  HERMES MTP LAB v0.4.0 - PLUGIN INSTALLER
 echo ==============================================
 echo.
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0Install-Hermes-MTP-Lab.ps1"

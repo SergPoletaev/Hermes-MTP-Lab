@@ -11,7 +11,7 @@ except ImportError:
     spec=importlib.util.spec_from_file_location('hermes_mtp_lab_bench_core',file)
     bench=importlib.util.module_from_spec(spec);spec.loader.exec_module(bench)
 router=APIRouter()
-API_VERSION="0.3.3"
+API_VERSION="0.4.0"
 
 def environment():
     sup,preset,comp,models=bench.get_model_environment()
@@ -49,6 +49,9 @@ def status():
         s['mtp_flag']=selected['native_mtp'] if selected else None
         s['mtp_manifest_flag']=selected['persistent_flag'] if selected else None
         s['tasks_per_phase']=len([x for x in bench.TASKS if not x['image'] or (selected and selected['has_mmproj'])])
+        s['measurements_per_task_per_cycle']=4
+        s['quality_methods']={'structured':'exact_json','code':'optional_local_docker_sandbox',
+                              'grounding':'reference_heuristic','open_ended':'human_review'}
         from hermes_cli.local_runtime.bootstrap import assets_dir
         marker=Path(assets_dir())/'.mtp-lab-pending.json'
         if marker.exists():

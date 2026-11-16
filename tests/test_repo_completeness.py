@@ -105,7 +105,7 @@ class WholeRepositoryTests(unittest.TestCase):
                 pass
         with patch.object(core, 'get_model_environment', return_value=(None, None, None, [example])), \
              patch.object(core.threading, 'Thread', DeferredThread):
-            self.assertEqual(core.execute_benchmark('Model', 1), 8)
+            self.assertEqual(core.execute_benchmark('Model', 1), 16)
             with self.assertRaisesRegex(RuntimeError, 'already running'):
                 core.execute_benchmark('Model', 1)
 

@@ -1,4 +1,4 @@
-# Hermes MTP Lab v0.3.3 — result fields
+# Hermes MTP Lab v0.4.0 — result fields
 
 Hermes MTP Lab performs an A/B test on the **selected compatible local GGUF model**. Its output folder contains:
 
@@ -21,3 +21,5 @@ Hermes MTP Lab performs an A/B test on the **selected compatible local GGUF mode
 Four text workloads are measured for a text-only GGUF. With a linked, readable `mmproj` the benchmark also runs two image workloads using the bundled reference image.
 
 Use the generated reports for actual values; this documentation contains no fabricated performance measurements or model-specific assertions.
+
+> This is a historical sample. New v0.4.0 tests generate paired `comparisons.json`, `answers.jsonl`, and `hardware.json`; the older figures are **not** evidence of new quality checks passing.

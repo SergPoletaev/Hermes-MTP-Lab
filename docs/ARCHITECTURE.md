@@ -31,3 +31,7 @@ The benchmark copies the original `presets.ini` bytes to a unique backup, writes
 ## Repository validation and CI
 
 The public repository contains the Hermes plugin, installers, documentation, tests and CI workflows only. Owner-side publishing credentials and publishing scripts are not part of the repository and are not CI dependencies. `requirements-ci.txt` supplies FastAPI and HTTPX for clean GitHub runners. The source builder uses the verifier’s explicit file allowlist; every release entry is compared byte-for-byte against the audited source. Deleting or excluding private publishing scripts must not make any CI job fail.
+
+## v0.4.0 controlled evaluation
+
+`dashboard/quality_eval.py` grades deterministic reference tasks, distinguishes open-ended manual reviews, and permits generated-code execution only in a cached restricted Docker container. `dashboard/hardware_diag.py` reads launcher/process state and optional NVIDIA telemetry without changing the engine. `dashboard/bench_core.py` runs two replicas in each OFF/ON phase with cycle-order reversal, captures separate visible and reasoning output, retries confirmed truncation once, restores selected preset bytes and writes six report files. Missing system metrics are explicitly unknown.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.4.0 — Paired quality, reproduction and hardware checks
+
+- Implemented OFF/OFF, ON/ON and OFF/ON parity with separate visible/reasoning fields, output review files and 1-/3-cycle balanced runs.
+- Adaptive 512–2048 completion limits, truncation detection, workload-specific reference checks and optional sandboxed code tests without host execution.
+- Added median absolute deviation, read-only GPU/process instrumentation, engine/head fingerprints and explicit unknown metrics.
+- Updated Desktop bilingual controls, Python regression suite, full documentation and deterministic releases without public publisher scripts.
+
 ## 0.3.3 — Companion picker, CI and complete repository publication
 
 - Model-independent MTP OFF/ON benchmark, with original Hermes preset restoration.

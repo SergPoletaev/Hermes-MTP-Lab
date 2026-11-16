@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 import sys
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.3.3'
+VERSION = '0.4.0'
 EXPECT = [
     '.gitignore', '.gitattributes', '.github/workflows/ci.yml', 'README.md', 'docs/assets/mtp-lab-dashboard.png',
     'LICENSE', 'SECURITY.md', 'CONTRIBUTING.md', 'CHANGELOG.md',
@@ -14,8 +14,9 @@ EXPECT = [
     'plugin.yaml', '__init__.py',
     'desktop/plugin.js', 'dashboard/manifest.json',
     'dashboard/plugin_api.py', 'dashboard/bench_core.py', 'dashboard/model_support.py',
+    'dashboard/quality_eval.py','dashboard/hardware_diag.py',
     'data/benchmark_scene.jpg',
-    'tests/test_bench_core.py', 'tests/test_companion_api.py',
+    'tests/test_bench_core.py', 'tests/test_companion_api.py', 'tests/test_quality_eval.py','tests/test_hardware_diag.py',
     'tests/test_desktop_registration.cjs',
     'tests/test_full_mock.py',
     'tests/test_progress_status.py', 'tests/test_repo_layout.py',
@@ -79,7 +80,7 @@ def check():
     screen=ROOT/'docs/assets/mtp-lab-dashboard.png'
     if not screen.exists() or screen.read_bytes()[:8]!=b'\x89PNG\r\n\x1a\n':problems.append('Dashboard screenshot missing or not PNG')
     js=(ROOT/'desktop/plugin.js').read_text(encoding='utf-8')
-    for required in ('usePluginI18n','ctx.i18n.register(STRINGS)',"const PREF_KEY", 'languageAuto:', 'languageEn:', 'languageRu:', 'v0.3.3'):
+    for required in ('usePluginI18n','ctx.i18n.register(STRINGS)',"const PREF_KEY", 'languageAuto:', 'languageEn:', 'languageRu:', 'v0.4.0'):
         if required not in js:problems.append('UI translation/persistence check failed: '+required)
     # Root layout is mandatory: Hermes Install from Git must discover both halves.
     if not (ROOT/'plugin.yaml').is_file() or not (ROOT/'desktop/plugin.js').is_file():

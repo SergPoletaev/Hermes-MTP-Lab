@@ -21,10 +21,15 @@ from urllib.request import Request, urlopen
 
 try:
     from . import model_support as ms
+    from . import quality_eval as qe, hardware_diag as hd
 except ImportError:
     import importlib.util
     spec=importlib.util.spec_from_file_location('mtp_lab_model_support',Path(__file__).with_name('model_support.py'))
     ms=importlib.util.module_from_spec(spec);spec.loader.exec_module(ms)
+    spec_q=importlib.util.spec_from_file_location('mtp_lab_quality_eval',Path(__file__).with_name('quality_eval.py'))
+    qe=importlib.util.module_from_spec(spec_q);spec_q.loader.exec_module(qe)
+    spec_h=importlib.util.spec_from_file_location('mtp_lab_hardware_diag',Path(__file__).with_name('hardware_diag.py'))
+    hd=importlib.util.module_from_spec(spec_h);spec_h.loader.exec_module(hd)
 
 BENCH_CTX = 32768  # Upper bound, never grow a smaller native context
 METRICS = {'llamacpp:tokens_predicted_total':'tokens',
@@ -38,9 +43,9 @@ TASKS=[
     {'id':'network','group':'Текст','title':'Technical explanation','image':False,
      'prompt':'Explain how a TCP connection starts, how sequence numbers and acknowledgements work, and how retransmission and congestion control differ. Use an example with lost packets and write at least six paragraphs.'},
     {'id':'code','group':'Код и данные','title':'Python code generation','image':False,
-     'prompt':'Write a Python 3 function that merges overlapping date intervals, retaining time zones. Explain handling of empty intervals, equal boundaries and invalid inputs. Include three realistic unit tests, and discuss the complexity.'},
+     'prompt':'Write Python 3 code with a top-level function named merge_intervals(intervals). Input: a list of (start_datetime, end_datetime) pairs; all datetimes must be timezone-aware. Return a list of UTC-aware (start, end) pairs sorted by start, merging overlapping or touching intervals. Empty input returns []. Raise ValueError or TypeError on any naive datetime or reversed interval. Preserve zero-length intervals. Include code only in one Python fenced block, followed by a brief complexity explanation.'},
     {'id':'structured','group':'Код и данные','title':'Data extraction and reasoning','image':False,
-     'prompt':'A warehouse received 18 red crates at 24 units each, 13 blue crates at 17 units each and 7 green crates at 31 units each. Then 12% of red units, 8% of blue units and 5% of green units were damaged (round each damaged count up). Calculate accepted units by color and total, show every intermediate calculation, and output a JSON object with the final results.'},
+     'prompt':'A warehouse received 18 red crates at 24 units each, 13 blue crates at 17 units each and 7 green crates at 31 units each. Then 12% of red units, 8% of blue units and 5% of green units were damaged (round damaged units up separately for each color). Calculate accepted units by color and total, show intermediate arithmetic, and finish with a JSON object containing integer keys red, blue, green and total for accepted units.'},
     {'id':'narrative','group':'Текст','title':'Creative reasoning','image':False,
      'prompt':'Write a grounded scene about an engineer restoring power to an alpine observatory during a snowstorm. Explain the practical reasoning behind every decision, preserve continuity of tools and locations, and end with a short inspection checklist.'},
     {'id':'scene','group':'Описание изображения','title':'Detailed image description','image':True,
@@ -137,6 +142,14 @@ def child_info(sup,model:dict)->dict:
         except (psutil.NoSuchProcess,psutil.AccessDenied):pass
     if len(hits)!=1:raise RuntimeError(f'Expected exactly one owned child for {model["id"]}, got {len(hits)}')
     proc,argv,port=hits[0]
+    try:
+        executable=proc.exe()
+    except (psutil.Error,OSError):
+        executable=None
+    try:
+        resident=round(proc.memory_info().rss/1048576,1)
+    except (psutil.Error,OSError):
+        resident=None
     draft=cmd_flag(argv,'--model-draft') or cmd_flag(argv,'--spec-draft-model')
     spec_type=cmd_flag(argv,'--spec-type')
     enabled='draft-mtp' in [x.strip() for x in spec_type.split(',')]
@@ -145,6 +158,13 @@ def child_info(sup,model:dict)->dict:
             'kv_k':cmd_flag(argv,'--cache-type-k'),'kv_v':cmd_flag(argv,'--cache-type-v'),
             'flash':cmd_flag(argv,'--flash-attn'),'batch':cmd_flag(argv,'--batch-size'),
             'ubatch':cmd_flag(argv,'--ubatch-size'),'mmproj':bool(cmd_flag(argv,'--mmproj')),
+            'gpu_layers':cmd_flag(argv,'--n-gpu-layers') or cmd_flag(argv,'-ngl') or cmd_flag(argv,'--gpu-layers') or None,
+            'actual_gpu_layers':None, # engine does not expose trustworthy count via metrics
+            'draft_gpu_layers':cmd_flag(argv,'--spec-draft-ngl') or cmd_flag(argv,'-ngld') or None,
+            'threads':cmd_flag(argv,'--threads') or None,
+            'parallel':cmd_flag(argv,'--parallel') or cmd_flag(argv,'-np') or None,
+            'engine_version':hd.engine_version(executable),
+            'rss_mib':resident,
             'mtp':enabled and head_good,'spec_type':spec_type,'draft':draft,
             'draft_n':cmd_flag(argv,'--spec-draft-n-max')}
 
@@ -171,22 +191,54 @@ def restore_presets(sup,preset:Path,original:bytes)->None:
     sup.reload_presets()
     if preset.read_bytes()!=original:raise RuntimeError('Preset bytes differ after restoration')
 
-def route_request(sup,model_id:str,task:dict,image_b64:str|None,max_tokens:int=260)->dict:
+def route_request(sup,model_id:str,task:dict,image_b64:str|None,max_tokens:int=768)->dict:
     content=task['prompt']
     if task['image']:
         if not image_b64:raise RuntimeError('Benchmark image missing')
         content=[{'type':'text','text':content},
                  {'type':'image_url','image_url':{'url':'data:image/jpeg;base64,'+image_b64}}]
+    # Strict greedy contract. Keep the request identical across OFF and ON.
     body={'model':model_id,'messages':[{'role':'user','content':content}],
-          'max_tokens':max_tokens,'temperature':0.0,'top_p':1.0,'seed':12345,'stream':False}
+          'max_tokens':max_tokens,'temperature':0.0,'top_k':1,'top_p':1.0,
+          'min_p':0.0,'repeat_penalty':1.0,'cache_prompt':False,
+          'seed':12345,'stream':False}
     tick=time.perf_counter()
-    response=http_json(sup.base_url+'/chat/completions',sup.api_key,body)
+    response=http_json(sup.base_url+'/chat/completions',sup.api_key,body,
+                       timeout=max(480,int(max_tokens*.9)))
     elapsed=time.perf_counter()-tick
     usage=response.get('usage') or {}
-    msg=((response.get('choices') or [{}])[0].get('message') or {})
-    output=(msg.get('content') or '')+' '+(msg.get('reasoning_content') or '')
+    choice=(response.get('choices') or [{}])[0]
+    msg=choice.get('message') or {}
+    visible=qe.normalize_response(msg.get('content'))
+    reasoning=qe.normalize_response(msg.get('reasoning_content'))
     return {'elapsed':elapsed,'usage':usage,'timings':response.get('timings') or {},
-            'chars':len(output.strip()),'output_sha256':hashlib.sha256(output.encode('utf-8')).hexdigest()}
+            'chars':len(visible.strip())+len(reasoning.strip()),
+            'visible':visible,'reasoning':reasoning,
+            'visible_sha256':qe.sha(visible),'reasoning_sha256':qe.sha(reasoning),
+            'output_sha256':qe.sha(visible+' '+reasoning),
+            'finish_reason':choice.get('finish_reason'),
+            'max_tokens':max_tokens}
+
+
+def token_budget(task:dict,ctx:int)->int:
+    # Preserve room for chat template, multimodal tokens and prompt. Do not
+    # silently exceed a smaller Hermes native context.
+    choices={'network':768,'code':1024,'structured':512,'narrative':768,
+             'scene':512,'grounding':512}
+    if ctx<2048:raise RuntimeError('Benchmark requires native context >= 2048')
+    return min(choices[task['id']],ctx-1536)
+
+
+def maybe_retry(res:dict,limit:int,ctx:int)->int|None:
+    """Retry one *truncated* answer with more room; never assume success."""
+    usage_n=int(res.get('usage',{}).get('completion_tokens',0) or 0)
+    capped=res.get('finish_reason') in ('length','max_tokens')
+    if res.get('finish_reason') is None and usage_n>=limit-2:
+        capped=True  # older llama.cpp may omit finish_reason
+    if not capped:return None
+    new_limit=min(2048,ctx-1536,limit*2)
+    return new_limit if new_limit>limit else None
+
 
 def summarize(rows:list[dict])->list[dict]:
     result=[]
@@ -194,44 +246,133 @@ def summarize(rows:list[dict])->list[dict]:
         rec={'group':group}
         for phase in ('OFF','ON'):
             eligible=[r for r in rows if r['group']==group and r['phase']==phase and r['valid']]
-            rec[phase.lower()+'_n']=len(eligible)
-            rec[phase.lower()+'_tps']=round(statistics.median([r['decode_tps'] for r in eligible]),2) if eligible else None
+            speeds=[r['decode_tps'] for r in eligible if r.get('decode_tps') is not None]
+            rec[phase.lower()+'_n']=len(speeds)
+            rec[phase.lower()+'_tps']=round(statistics.median(speeds),2) if speeds else None
+            rec[phase.lower()+'_tps_mad']=round(statistics.median(abs(x-statistics.median(speeds)) for x in speeds),3) if speeds else None
+            rec[phase.lower()+'_tps_min']=round(min(speeds),3) if speeds else None
+            rec[phase.lower()+'_tps_max']=round(max(speeds),3) if speeds else None
             rec[phase.lower()+'_elapsed']=round(statistics.median([r['elapsed'] for r in eligible]),2) if eligible else None
             rec[phase.lower()+'_accepted']=sum(r['accepted'] for r in eligible)
             rec[phase.lower()+'_drafted']=sum(r['drafted'] for r in eligible)
+            rec[phase.lower()+'_quality_pass']=sum(r.get('quality',{}).get('status')=='pass' for r in eligible)
+            rec[phase.lower()+'_quality_fail']=sum(r.get('quality',{}).get('status')=='fail' for r in eligible)
+            rec[phase.lower()+'_incomplete']=sum(r.get('quality',{}).get('status')=='incomplete' for r in eligible)
         a,b=rec['off_tps'],rec['on_tps']
         rec['speedup']=round(b/a,3) if a and b else None
         rec['acceptance']=round(rec['on_accepted']/rec['on_drafted'],3) if rec['on_drafted'] else None
         result.append(rec)
     return result
 
-def write_report(root:Path,rows:list[dict],notes:list[str],model:dict,restored:bool,configs:dict,ctx:int)->dict:
+
+def write_report(root:Path,rows:list[dict],notes:list[str],model:dict,restored:bool,
+                 configs:dict,ctx:int,answers:list|None=None,hardware:list|None=None)->dict:
     root.mkdir(parents=True,exist_ok=True)
     (root/'results.json').write_text(json.dumps(rows,ensure_ascii=False,indent=2),encoding='utf-8')
-    fields=['model_id','phase','task','group','trial','valid','output_sha256','tokens','decode_seconds','decode_tps','elapsed','prompt_tokens','prompt_seconds','drafted','accepted','ctx','kv_k','kv_v','flash','mmproj','pid','detail']
+    fields=['model_id','phase','task','group','trial','replica','valid','finish_reason',
+            'token_limit','attempts','truncated','visible_sha256','reasoning_sha256',
+            'output_sha256','quality_status','tokens','decode_seconds','decode_tps','elapsed',
+            'elapsed_total','prompt_tokens','prompt_seconds','drafted','accepted',
+            'ctx','gpu_layers','draft_gpu_layers','kv_k','kv_v','flash','mmproj','detail']
     with (root/'results.csv').open('w',encoding='utf-8-sig',newline='') as file:
         writer=csv.DictWriter(file,fieldnames=fields,extrasaction='ignore');writer.writeheader();writer.writerows(rows)
+    answers=answers or []
+    with (root/'answers.jsonl').open('w',encoding='utf-8') as stream:
+        for a in answers:
+            stream.write(json.dumps(a,ensure_ascii=False)+'\n')
+    parity=qe.comparisons(answers)
+    parity_summary=qe.comparison_summary(parity)
+    (root/'comparisons.json').write_text(json.dumps(parity,ensure_ascii=False,indent=2),encoding='utf-8')
+    # These files contain only local benchmark text and optional NVIDIA telemetry;
+    # never include full machine paths, auth headers or chat contents.
+    hw={'environment':hd.environment(),'main_model':hd.file_identity(model.get('model_path')),
+        'mtp_head':hd.file_identity(model.get('mtp_head')),
+        'mmproj':hd.file_identity(model.get('mmproj')),
+        'samples':hardware or []}
+    (root/'hardware.json').write_text(json.dumps(hw,ensure_ascii=False,indent=2),encoding='utf-8')
     summary=summarize(rows)
-    # Remove loaded PIDs, ports and draft filesystem paths from shareable report.
-    safe={p:{k:v for k,v in conf.items() if k not in ('pid','port','draft')} for p,conf in configs.items()}
+    task_summary=[]
+    for task_id in sorted({r['task'] for r in rows}):
+        one={'task':task_id}
+        for phase in ('OFF','ON'):
+            values=[r['decode_tps'] for r in rows if r['task']==task_id and r['phase']==phase and r['valid'] and r.get('decode_tps') is not None]
+            one[phase.lower()+'_n']=len(values)
+            one[phase.lower()+'_median']=round(statistics.median(values),3) if values else None
+            one[phase.lower()+'_min']=round(min(values),3) if values else None
+            one[phase.lower()+'_max']=round(max(values),3) if values else None
+        a,b=one['off_median'],one['on_median']
+        one['speedup']=round(b/a,3) if a and b else None
+        task_summary.append(one)
+    (root/'task_summary.json').write_text(json.dumps(task_summary,ensure_ascii=False,indent=2),encoding='utf-8')
+    safe={p:{k:v for k,v in conf.items() if k not in ('pid','port','draft','engine_exe')}
+          for p,conf in configs.items()}
     comparable=bool(safe.get('OFF') and safe.get('ON'))
     if comparable:
-        comparable=all(safe['OFF'].get(k)==safe['ON'].get(k) for k in ('ctx','kv_k','kv_v','flash','batch','ubatch','mmproj'))
-    lines=['# Hermes MTP Lab — model-agnostic A/B benchmark','',
-           f'Model ID: `{model["id"]}`',f'MTP configuration: {model["mtp_kind"]}',
-           f'Has vision projector: {model["has_mmproj"]}',f'Preset restored byte-for-byte: {restored}',
-           'Direct llama.cpp workloads; NOT Hermes Auto/Native/Text UI-mode timings.',
-           f'OFF/ON effective flags confirmed comparable: {comparable}; context {ctx}',
-           '','| Workload | OFF tok/s | ON tok/s | Speedup | Accepted/drafted |',
+        comparable=all(safe['OFF'].get(k)==safe['ON'].get(k)
+                       for k in ('ctx','kv_k','kv_v','flash','batch','ubatch','mmproj','gpu_layers'))
+        # Unknown effective settings make attribution uncertain, not proven.
+        comparable=comparable and all(safe['OFF'].get(k) not in (None,'')
+                                      for k in ('ctx','kv_k','kv_v','flash','batch','ubatch'))
+    # Adaptive retries may produce different generation caps; preserve the
+    # measurements but never claim strict comparability for unequal caps.
+    token_limits={}
+    for r in rows:
+        token_limits.setdefault((r['trial'],r['task'],r['replica']),{})[r['phase']]=r['token_limit']
+    unequal_caps=sum(v.get('OFF')!=v.get('ON') for v in token_limits.values()
+                     if 'OFF' in v and 'ON' in v)
+    if unequal_caps:comparable=False
+    quality_counts={s:sum(r.get('quality_status')==s for r in rows)
+                    for s in ('pass','fail','unverified','manual_review','incomplete')}
+    n_truncated=sum(r.get('truncated',False) for r in rows)
+    lines=['# Hermes MTP Lab — controlled, paired benchmark','',
+           f'Model ID: `{model["id"]}`',f'MTP configuration: {model.get("mtp_kind")}',
+           f'Has vision projector: {model.get("has_mmproj")}',
+           f'Preset restored byte-for-byte: {restored}',
+           'Direct llama.cpp workloads; NOT Hermes Auto/Native/Text UI timings.',
+           'Greedy: temperature=0; top_k=1; top_p=1; min_p=0; repeat_penalty=1; seed=12345; cache_prompt=false.',
+           'Paired OFF/OFF, ON/ON and OFF/ON: separately compare visible/reasoning text; divergence is NOT by itself an incorrect answer.',
+           f'Comparable effective flags and paired token limits: {comparable}; context {ctx}; unequal paired token caps: {unequal_caps}',
+           f'Truncated after adaptive retry: {n_truncated}; quality outcomes: {quality_counts}',
+           '', '| Workload | OFF median tok/s (MAD) | ON median tok/s (MAD) | Speedup | MTP accepted/drafted |',
            '|---|---:|---:|---:|---:|']
     for s in summary:
         value=lambda x:'n/a' if x is None else str(x)
-        lines.append(f'| {s["group"]} | {value(s["off_tps"])} | {value(s["on_tps"])} | {value(s["speedup"])}× | {s["on_accepted"]}/{s["on_drafted"]} |')
-    lines+=['','## Actual flags (excluding private paths)','```json',json.dumps(safe,ensure_ascii=False,indent=2),'```','','## Notes']+['- '+str(n) for n in notes]
-    lines+=['','Not all GGUFs support MTP. A tested model, engine and companion combination is required.',
-            'Speedup is descriptive if batch/ubatch or other effective flags are unknown.']
+        lines.append(f'| {s["group"]} | {value(s["off_tps"])} ({value(s["off_tps_mad"])}) | {value(s["on_tps"])} ({value(s["on_tps_mad"])}) | {value(s["speedup"])}× | {s["on_accepted"]}/{s["on_drafted"]} |')
+    lines+=['','## Per-task speed dispersion',
+            '| Task | OFF median [min, max] tok/s | ON median [min, max] tok/s | Speedup |',
+            '|---|---:|---:|---:|']
+    for t in task_summary:
+        lines.append(f'| {t["task"]} | {t["off_median"]} [{t["off_min"]}, {t["off_max"]}] | {t["on_median"]} [{t["on_min"]}, {t["on_max"]}] | {t["speedup"]}× |')
+    lines+=['','## Reproducibility','',
+            '| Pair | Compared | Same visible | Same reasoning | Median visible similarity |',
+            '|---|---:|---:|---:|---:|']
+    for typ,s in parity_summary.items():
+        lines.append(f'| {typ} | {s["pairs"]} | {s["same_visible"]} | {s["same_reasoning"]} | {s["median_visible_similarity"]} |')
+    lines+=['','Visible-content differences indicate a change in decoding trajectory, not necessarily a regression.',
+            'For code, execution occurs only in a local, pre-cached restricted Docker sandbox. If absent, quality is UNVERIFIED, never PASS.',
+            'Reference JSON and image label/colour checks are narrow automated tests. Natural-language answers require manual review.',
+            'A `valid` timing row is NOT a claim of correct content. `incomplete` means token cap prevented grading.',
+            '', '## Files',
+            '- `results.json`, `results.csv`: per-request speed, completion and quality.',
+            '- `task_summary.json`: per-task OFF/ON speed medians, min/max and ratios.',
+            '- `answers.jsonl`: full model-generated benchmark responses (review before sharing).',
+            '- `comparisons.json`: visible/reasoning equality and similarity for three pair types.',
+            '- `hardware.json`: hardware and model/head fingerprints (first 64 KiB only), GPU-wide versus per-PID VRAM if available.',
+            '', '## Actual flags (excluding private paths)','```json',
+            json.dumps(safe,ensure_ascii=False,indent=2),'```','','## Notes']+['- '+str(n) for n in notes]
+    lines+=['','The GPU layers field is the requested launcher setting; **actual loaded GPU layer count is unavailable** unless the engine reports it.',
+            'The number of target GPU layers alone is not meaningful for MoE experts or dynamic offload.',
+            'MTP requires a compatible head/engine/model combination; a GGUF header and an enabled flag alone do NOT establish compatibility.',
+            'A missing GPU-offload flag or per-process VRAM metric is UNKNOWN, not an assumed value.']
     (root/'summary.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
-    return {'summary':summary,'comparable':comparable,'path':str(root),'configs':safe}
+    last_gpu=next((x['gpu'] for x in reversed(hardware or []) if x.get('gpu')),None)
+    version=next((x.get('engine_version') for x in hardware or [] if x.get('engine_version')),None)
+    return {'summary':summary,'comparable':comparable,'path':str(root),'configs':safe,
+            'parity':parity_summary,'quality_counts':quality_counts,
+            'hardware_info':{'gpu':last_gpu,'engine_version':version,
+                             'gpu_layers_arg':(safe.get('ON') or safe.get('OFF') or {}).get('gpu_layers'),
+                             'actual_gpu_layers':None}}
+
 
 class BenchmarkState:
     def __init__(self):
@@ -239,7 +380,7 @@ class BenchmarkState:
         self.data={'state':'idle','stage':'Готов к тестированию','done':0,'total':0,
                    'rows':[],'summary':[],'error':None,'report_path':None,'selected_model':None,
                    'run_started_at':None,'stage_started_at':None,'step_kind':'idle',
-                   'phase':None,'current_task':None,'trial':None,'trials':None,
+                   'phase':None,'current_task':None,'trial':None,'trials':None,'replica':None,
                    'live_port':None,'live_baseline':None,'live_token_limit':None}
     def read(self):
         with self.lock:return json.loads(json.dumps(self.data))
@@ -254,34 +395,38 @@ class BenchmarkState:
             self.data.update(extra)
 STATE=BenchmarkState()
 
+
+def phase_order(trial:int)->list[str]:
+    # A-B / B-A across cycles reduces systematic drift; two back-to-back
+    # replicas in each phase permit OFF/OFF and ON/ON comparisons.
+    return ['OFF','ON'] if trial%2==0 else ['ON','OFF']
+
+
 def execute_benchmark(model_id:str,trials:int=1):
-    trials=max(1,min(3,int(trials)))
+    if trials not in (1,3):raise ValueError('trials must be 1 or 3')
     sup,preset,comp,models=get_model_environment()
     model=select_spec(models,model_id)
     tasks=[t for t in TASKS if model['has_mmproj'] or not t['image']]
-    total=2*trials*len(tasks)
-    # Reserve a single benchmark slot atomically. Two near-simultaneous /start
-    # calls must never run competing workers that both modify Hermes presets.
+    total=4*trials*len(tasks)
     with STATE.lock:
-        if STATE.data['state']=='running':
-            raise RuntimeError('Benchmark already running')
+        if STATE.data['state']=='running':raise RuntimeError('Benchmark already running')
         STATE.cancel.clear()
         STATE.data.update(state='running',stage='Checking model',model_spec=model,done=0,total=total,
-                          rows=[],summary=[],error=None,report_path=None,
+                          rows=[],summary=[],error=None,report_path=None,parity=None,quality_counts=None,
                           selected_model=model_id,run_started_at=time.time(),stage_started_at=time.time(),
-                          step_kind='checking',phase=None,current_task=None,trial=None,trials=trials,
+                          step_kind='checking',phase=None,current_task=None,trial=None,trials=trials,replica=None,
                           live_port=None,live_baseline=None,live_token_limit=None)
     thread=threading.Thread(target=_run,args=(model_id,trials),daemon=True,name='hermes-mtp-lab-benchmark')
-    try:
-        thread.start()
+    try:thread.start()
     except Exception:
         STATE.update(state='error',stage='Worker start failed')
         raise
     return total
 
+
 def _run(model_id:str,trials:int):
     original=None;backup=None;marker=None;preset=None;sup=None
-    rows=[];notes=[];configs={};restored=False;ctx=0;model=None
+    rows=[];answers=[];notes=[];configs={};restored=False;ctx=0;model=None;hardware=[]
     output=Path.home()/'Desktop'/'Hermes-MTP-Reports'
     if not (Path.home()/'Desktop').exists():output=Path.home()/'Hermes-MTP-Reports'
     folder=output/('run-'+datetime.now().strftime('%Y%m%d-%H%M%S'))
@@ -294,10 +439,10 @@ def _run(model_id:str,trials:int):
         native=int(section.get('ctx-size','0'))
         if native<=0:raise RuntimeError('Native context not specified; cannot benchmark safely')
         ctx=min(native,BENCH_CTX)
-        if ctx<512:raise RuntimeError('Context too small for benchmark')
+        if ctx<2048:raise RuntimeError('Context too small: minimum 2048 for controlled quality benchmark')
         from hermes_cli.local_runtime.bootstrap import assets_dir
         marker=Path(assets_dir())/'.mtp-lab-pending.json'
-        if marker.exists():raise RuntimeError('Unresolved prior benchmark marker; restore before starting another test')
+        if marker.exists():raise RuntimeError('Unresolved prior benchmark marker; restore before testing')
         backup=preset.with_name(preset.name+'.mtp-lab-backup-'+datetime.now().strftime('%Y%m%d-%H%M%S-%f'))
         backup.write_bytes(original)
         ms.atomic_write(marker,json.dumps({'schema':2,'model':model_id,
@@ -309,54 +454,105 @@ def _run(model_id:str,trials:int):
         if model['has_mmproj']:
             img=Path(__file__).resolve().parent.parent/'data'/'benchmark_scene.jpg'
             img64=base64.b64encode(img.read_bytes()).decode('ascii')
-        notes.append('Saved original preset bytes. Benchmark does not edit the model companion manifest.')
-        for phase,enabled in (('OFF',False),('ON',True)):
+        notes.append('Original selected preset backed up; model companion manifest unchanged.')
+        notes.append('Balanced cycle ordering; two replicas per phase. No third-party model, GPU or chat settings changed.')
+        sandbox=qe.docker_ready()
+        notes.append('Code sandbox: '+sandbox[1]+' (Docker image never pulled automatically).')
+        for trial in range(trials):
             if STATE.cancel.is_set():break
-            STATE.stage('switch',f'{phase}: preparing selected model preset',phase=phase,current_task=None,trial=None)
-            apply_phase(sup,preset,original,model,enabled,ctx)
-            STATE.stage('loading',f'{phase}: loading {model_id}',phase=phase)
-            ready=sup.ensure_model_ready(model_id)
-            if not ready:raise RuntimeError('Model did not become ready: '+model_id)
-            STATE.stage('warmup',f'{phase}: warm-up (not measured)',phase=phase)
-            route_request(sup,model_id,{'prompt':'Explain in detail why repeatable software tests matter.','image':False},None,max_tokens=150)
-            child=child_info(sup,model)
-            if child['mtp']!=enabled:
-                raise RuntimeError(f'MTP not confirmed for {model_id} during {phase}: observed {child["mtp"]}')
-            configs[phase]=child
-            for trial in range(trials):
-                for task in tasks:
-                    if STATE.cancel.is_set():break
-                    STATE.stage('preparing',f'{phase}: {task["title"]}, trial {trial+1}/{trials}',phase=phase,current_task=task['title'],current_group=task['group'],trial=trial+1)
-                    child=child_info(sup,model)
-                    before=child_metrics(child)
-                    STATE.stage('request',f'{phase}: generating {task["title"]}',phase=phase,current_task=task['title'],current_group=task['group'],trial=trial+1,
-                                live_port=child['port'],live_baseline=before.get('tokens'),live_token_limit=260)
-                    res=route_request(sup,model_id,task,img64,max_tokens=260)
-                    delta=diff_metrics(before,child_metrics(child))
-                    n=int(delta.get('tokens',res['usage'].get('completion_tokens',0)) or 0)
-                    sec=float(delta.get('decode_seconds',0) or 0)
-                    if sec<=0:sec=float(res['timings'].get('predicted_ms',0) or 0)/1000
-                    tps=n/sec if sec>0 else None
-                    drafted=max(0,int(delta.get('drafted',0)));accepted=max(0,int(delta.get('accepted',0)))
-                    valid=bool(n>=48 and tps and math.isfinite(tps) and res['chars']>0)
-                    detail=[]
-                    if not valid:detail.append('Insufficient tokens or timing')
-                    if enabled and (drafted==0 or accepted==0):valid=False;detail.append('MTP draft acceptance not confirmed')
-                    if not enabled and drafted>0:valid=False;detail.append('Unexpected drafts in OFF')
-                    usage_n=int(res['usage'].get('completion_tokens',0) or 0)
-                    if usage_n and abs(n-usage_n)>max(15,usage_n*.10):
-                        valid=False;detail.append('Concurrent request contamination')
-                    record={'model_id':model_id,'phase':phase,'task':task['id'],'group':task['group'],
-                            'trial':trial+1,'valid':valid,'output_sha256':res['output_sha256'],
-                            'tokens':n,'decode_seconds':round(sec,4),'decode_tps':round(tps,3) if tps else None,
-                            'elapsed':round(res['elapsed'],3),'prompt_tokens':round(delta.get('prompt_tokens',0)),
-                            'prompt_seconds':round(delta.get('prompt_seconds',0),3),'drafted':drafted,'accepted':accepted,
-                            'ctx':child['ctx'],'kv_k':child['kv_k'],'kv_v':child['kv_v'],'flash':child['flash'],
-                            'mmproj':child['mmproj'],'pid':child['pid'],'detail':'; '.join(detail)}
-                    rows.append(record);STATE.add_row(record)
+            for phase in phase_order(trial):
                 if STATE.cancel.is_set():break
-            notes.append(f'{phase}: model {model_id}; ctx {ctx}; MTP confirmed {child["mtp"]}')
-        if STATE.cancel.is_set():notes.append('User cancelled; partial data retained')
+                enabled=phase=='ON'
+                STATE.stage('switch',f'Cycle {trial+1}/{trials} {phase}: preparing preset',
+                            phase=phase,current_task=None,trial=trial+1,replica=None)
+                apply_phase(sup,preset,original,model,enabled,ctx)
+                STATE.stage('loading',f'{phase}: loading {model_id}',phase=phase)
+                if not sup.ensure_model_ready(model_id):raise RuntimeError('Model did not become ready: '+model_id)
+                STATE.stage('warmup',f'{phase}: warm-up (not measured)',phase=phase)
+                route_request(sup,model_id,{'prompt':'Explain why repeatable software tests matter.','image':False},None,max_tokens=128)
+                child=child_info(sup,model)
+                if child['mtp']!=enabled:
+                    raise RuntimeError(f'MTP not confirmed for {model_id} during {phase}: observed {child["mtp"]}')
+                if phase in configs:
+                    compare_fields=('ctx','kv_k','kv_v','flash','batch','ubatch','gpu_layers','draft_gpu_layers','mmproj')
+                    if any(configs[phase].get(k)!=child.get(k) for k in compare_fields):
+                        notes.append('WARNING: effective flags changed between '+phase+' cycles')
+                else:configs[phase]=child
+                hardware.append({'stage':'phase_loaded','phase':phase,'trial':trial+1,
+                                 'gpu':hd.snapshot(child.get('pid')),
+                                 'rss_mib':child.get('rss_mib'),'engine_version':child.get('engine_version')})
+                for replica in (1,2):
+                    if STATE.cancel.is_set():break
+                    for task in tasks:
+                        if STATE.cancel.is_set():break
+                        limit=token_budget(task,ctx)
+                        STATE.stage('preparing',f'{phase}: {task["title"]}, cycle {trial+1}/{trials}, replica {replica}/2',
+                                    phase=phase,current_task=task['title'],current_group=task['group'],
+                                    trial=trial+1,replica=replica)
+                        child=child_info(sup,model)
+                        attempts=0;elapsed_total=0
+                        while True:
+                            attempts+=1
+                            before=child_metrics(child)
+                            STATE.stage('request',f'{phase}: {task["title"]} ({replica}/2)',
+                                        phase=phase,current_task=task['title'],current_group=task['group'],
+                                        trial=trial+1,replica=replica,live_port=child['port'],
+                                        live_baseline=before.get('tokens'),live_token_limit=limit)
+                            res=route_request(sup,model_id,task,img64,max_tokens=limit)
+                            elapsed_total+=res['elapsed']
+                            delta=diff_metrics(before,child_metrics(child))
+                            retry=maybe_retry(res,limit,ctx) if attempts==1 else None
+                            if retry and not STATE.cancel.is_set():
+                                notes.append(f'Adaptive retry: {task["id"]} {phase} cycle {trial+1}, {limit} -> {retry} tokens')
+                                limit=retry
+                                continue
+                            break
+                        n=int(delta.get('tokens',res.get('usage',{}).get('completion_tokens',0)) or 0)
+                        sec=float(delta.get('decode_seconds',0) or 0)
+                        if sec<=0:sec=float(res.get('timings',{}).get('predicted_ms',0) or 0)/1000
+                        tps=n/sec if sec>0 else None
+                        drafted=max(0,int(delta.get('drafted',0)));accepted=max(0,int(delta.get('accepted',0)))
+                        usage_n=int(res.get('usage',{}).get('completion_tokens',0) or 0)
+                        truncated=res.get('finish_reason') in ('length','max_tokens') or (res.get('finish_reason') is None and usage_n>=limit-2)
+                        detail=[];valid=bool(n>=48 and tps is not None and math.isfinite(tps) and res['chars']>0)
+                        if not valid:detail.append('Insufficient tokens or timing')
+                        if enabled and (drafted==0 or accepted==0):valid=False;detail.append('MTP draft acceptance not confirmed')
+                        if not enabled and drafted>0:valid=False;detail.append('Unexpected draft tokens in OFF')
+                        if usage_n and abs(n-usage_n)>max(15,usage_n*.10):
+                            valid=False;detail.append('Concurrent request contamination or metrics mismatch')
+                        if truncated:detail.append('Answer truncated at max_tokens')
+                        quality=qe.grade(task['id'],res.get('visible',''),res.get('reasoning',''),
+                                         'length' if truncated else res.get('finish_reason'),sandbox=sandbox)
+                        answer={'model_id':model_id,'phase':phase,'trial':trial+1,'replica':replica,
+                                'task':task['id'],'visible':res.get('visible',''),
+                                'reasoning':res.get('reasoning',''),'finish_reason':res.get('finish_reason'),
+                                'quality':quality,'token_limit':limit}
+                        answers.append(answer)
+                        record={'model_id':model_id,'phase':phase,'task':task['id'],'group':task['group'],
+                                'trial':trial+1,'replica':replica,'valid':valid,
+                                'finish_reason':res.get('finish_reason'),'token_limit':limit,
+                                'attempts':attempts,'truncated':truncated,
+                                'visible_sha256':res.get('visible_sha256',qe.sha(res.get('visible',''))),
+                                'reasoning_sha256':res.get('reasoning_sha256',qe.sha(res.get('reasoning',''))),
+                                'output_sha256':res['output_sha256'],
+                                'quality_status':quality['status'],'quality':quality,
+                                'tokens':n,'decode_seconds':round(sec,4),
+                                'decode_tps':round(tps,3) if tps else None,
+                                'elapsed':round(res['elapsed'],3),'elapsed_total':round(elapsed_total,3),
+                                'prompt_tokens':round(delta.get('prompt_tokens',0)),
+                                'prompt_seconds':round(delta.get('prompt_seconds',0),3),
+                                'drafted':drafted,'accepted':accepted,
+                                'ctx':child.get('ctx'),'gpu_layers':child.get('gpu_layers'),
+                                'draft_gpu_layers':child.get('draft_gpu_layers'),
+                                'kv_k':child.get('kv_k'),'kv_v':child.get('kv_v'),
+                                'flash':child.get('flash'),'mmproj':child.get('mmproj'),
+                                'detail':'; '.join(detail)}
+                        rows.append(record);STATE.add_row(record)
+                    # Hardware snapshot outside timed request/quality evaluation.
+                    hardware.append({'stage':'replica_done','phase':phase,'trial':trial+1,'replica':replica,
+                                     'gpu':hd.snapshot(child.get('pid'))})
+                notes.append(f'Cycle {trial+1} {phase}: MTP={child["mtp"]}, ctx={ctx}')
+        if STATE.cancel.is_set():notes.append('User cancelled; partial results retained')
     except Exception as exc:
         notes.append('FAILED: '+str(exc));STATE.update(error=str(exc))
     finally:
@@ -374,12 +570,13 @@ def _run(model_id:str,trials:int):
         if model is None:model={'id':model_id,'mtp_kind':'unknown','has_mmproj':False}
         try:
             STATE.stage('report','Writing benchmark reports')
-            summary=write_report(folder,rows,notes,model,restored,configs,ctx)
+            result=write_report(folder,rows,notes,model,restored,configs,ctx,answers,hardware)
         except Exception as exc:
             STATE.update(state='error',stage='Report failed',error=str(exc),restored=restored)
             return
         STATE.update(state='cancelled' if STATE.cancel.is_set() else ('error' if STATE.read().get('error') else 'done'),
-                     stage='Done' if restored else 'Recovery required',summary=summary['summary'],
-                     comparable=summary['comparable'],report_path=summary['path'],configs=summary['configs'],
-                     restored=restored,notes=notes,step_kind='finished',stage_started_at=time.time(),
-                     live_port=None,live_baseline=None,live_token_limit=None)
+                     stage='Done' if restored else 'Recovery required',summary=result['summary'],
+                     comparable=result['comparable'],report_path=result['path'],configs=result['configs'],
+                     restored=restored,notes=notes,parity=result['parity'],
+                     quality_counts=result['quality_counts'],hardware_info=result['hardware_info'],step_kind='finished',
+                     stage_started_at=time.time(),live_port=None,live_baseline=None,live_token_limit=None)

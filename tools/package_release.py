@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 import argparse, zipfile
 ROOT = Path(__file__).resolve().parents[1]
-VERSION='0.3.3'
+VERSION='0.4.0'
 PROJECT='Hermes-MTP-Lab'
 PREFIX='Hermes_MTP_Lab_v'+VERSION
 PLUGIN_TOP=['plugin.yaml','__init__.py']

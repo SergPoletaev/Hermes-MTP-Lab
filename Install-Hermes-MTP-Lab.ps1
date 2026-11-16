@@ -10,11 +10,11 @@ try {
     $timeStamp = (Get-Date).ToString('yyyyMMdd-HHmmss')
     $suffix = $timeStamp + '-' + ([guid]::NewGuid().ToString('N').Substring(0,8))
 
-    Write-Host 'Hermes MTP Lab v0.3.3 - Installer (native Hermes plugin enable)' -ForegroundColor Cyan
+    Write-Host 'Hermes MTP Lab v0.4.0 - Installer (native Hermes plugin enable)' -ForegroundColor Cyan
     Write-Host "Source: $source"
     Write-Host "Destination: $target"
 
-    foreach($file in @('plugin.yaml','__init__.py','desktop\plugin.js','dashboard\plugin_api.py','dashboard\bench_core.py','dashboard\model_support.py','dashboard\manifest.json','data\benchmark_scene.jpg')) {
+    foreach($file in @('plugin.yaml','__init__.py','desktop\plugin.js','dashboard\plugin_api.py','dashboard\bench_core.py','dashboard\model_support.py','dashboard\quality_eval.py','dashboard\hardware_diag.py','dashboard\manifest.json','data\benchmark_scene.jpg')) {
         if (-not (Test-Path -LiteralPath (Join-Path $source $file) -PathType Leaf)) {
             throw "Plugin source is incomplete: $file. Extract entire ZIP before running."
         }
@@ -55,7 +55,7 @@ try {
             foreach($folder in @('desktop','dashboard','data')) {
                 Copy-Item -LiteralPath (Join-Path $source $folder) -Destination $stage -Recurse -Force
             }
-            foreach($file in @('plugin.yaml','__init__.py','desktop\plugin.js','dashboard\plugin_api.py','dashboard\bench_core.py','dashboard\model_support.py','dashboard\manifest.json','data\benchmark_scene.jpg')) {
+            foreach($file in @('plugin.yaml','__init__.py','desktop\plugin.js','dashboard\plugin_api.py','dashboard\bench_core.py','dashboard\model_support.py','dashboard\quality_eval.py','dashboard\hardware_diag.py','dashboard\manifest.json','data\benchmark_scene.jpg')) {
                 if (-not (Test-Path -LiteralPath (Join-Path $stage $file) -PathType Leaf)) {throw "Staging check failed: $file"}
             }
             if (Test-Path -LiteralPath $config -PathType Leaf) {

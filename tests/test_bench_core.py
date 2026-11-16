@@ -132,6 +132,23 @@ class ModelAgnosticTests(unittest.TestCase):
                 m=ms.model_specs(preset,comp)[0]
                 self.assertTrue(m['embedded_verified']);self.assertEqual(m['mtp_evidence'],'gguf');self.assertEqual(m['mtp_kind'],'embedded')
 
+    def test_balanced_phase_order_and_token_limits(self):
+        self.assertEqual(core.phase_order(0),['OFF','ON'])
+        self.assertEqual(core.phase_order(1),['ON','OFF'])
+        self.assertEqual(core.phase_order(2),['OFF','ON'])
+        code=next(t for t in core.TASKS if t['id']=='code')
+        self.assertEqual(core.token_budget(code,32768),1024)
+        self.assertEqual(core.token_budget(code,2048),512)
+        self.assertEqual(core.maybe_retry({'finish_reason':'length','usage':{'completion_tokens':512}},512,8192),1024)
+        self.assertIsNone(core.maybe_retry({'finish_reason':'stop','usage':{'completion_tokens':200}},512,8192))
+        self.assertIsNone(core.maybe_retry({'finish_reason':'length','usage':{'completion_tokens':2048}},2048,32768))
+    def test_quality_statistics_are_not_timing_validity(self):
+        rows=[{'group':'Test','phase':'OFF','valid':True,'decode_tps':10,'elapsed':1,'accepted':0,'drafted':0,'quality':{'status':'fail'}},
+              {'group':'Test','phase':'ON','valid':True,'decode_tps':20,'elapsed':1,'accepted':100,'drafted':125,'quality':{'status':'pass'}}]
+        a=core.summarize(rows)[0]
+        self.assertEqual(a['off_quality_fail'],1)
+        self.assertEqual(a['on_quality_pass'],1)
+        self.assertEqual(a['speedup'],2)
     def test_status_summary(self):
         rows=[{'group':'Text','phase':'OFF','valid':True,'decode_tps':25,'elapsed':10,'accepted':0,'drafted':0},
               {'group':'Text','phase':'ON','valid':True,'decode_tps':50,'elapsed':5,'accepted':90,'drafted':100}]
