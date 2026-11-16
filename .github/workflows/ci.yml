@@ -34,7 +34,9 @@ jobs:
       - name: Python logic and mock benchmarks
         run: python -m unittest discover -s tests -p 'test_*.py' -v
       - name: Desktop plugin registration test
-        run: node tests/test_desktop_registration.cjs
+        run: |
+          node tests/test_desktop_registration.cjs
+          node tests/test_desktop_file_picker.cjs
       - name: Build portable release and inspect contents
         run: |
           python tools/package_release.py --output dist
