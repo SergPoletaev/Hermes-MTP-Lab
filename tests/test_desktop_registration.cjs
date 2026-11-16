@@ -39,7 +39,7 @@ function findNode(node,fn){
 }
 function renderFor(state,selected='ru',sdkLocale='ru'){
   language=sdkLocale;let k=0
-  sandbox.useState=()=>{const i=k++;const values=[state,'','','',[], '', '',false,true,Date.now(),selected,[],''];return[values[i],()=>{}]}
+  sandbox.useState=()=>{const i=k++;const values=[state,'','','',[], '', '',false,true,Date.now(),selected,'off',[],''];return[values[i],()=>{}]}
   return sandbox.TEST_LABVIEW({ctx:{rest:async()=>state}})
 }
 const running={state:'running',recovery_needed:true,phase:'OFF',step_kind:'loading',stage:'Загрузка модели',done:0,total:12,run_started_at:Date.now()/1000-13,stage_started_at:Date.now()/1000-3}
@@ -72,16 +72,19 @@ const summaryEn=treeText(renderFor(sumState,'en'))
 assert(summaryEn.includes('Image description'),'English workload names not localized')
 assert(summaryEn.includes('Speedup'),'Results headings not translated')
 assert(!summaryEn.includes('Описание изображения'),'Raw Russian group name leaked in English')
-const advancedState={...sumState,api_version:'0.4.0',parity:{'OFF/OFF':{pairs:4,same_visible:3,same_reasoning:2},'ON/ON':{pairs:4,same_visible:4,same_reasoning:1},'OFF/ON':{pairs:8,same_visible:2,same_reasoning:1}},quality_counts:{pass:5,fail:2,unverified:3,manual_review:6,incomplete:0},hardware_info:{engine_version:'llama.cpp b12292',gpu_layers_arg:'auto',gpu:{gpus:[{name:'NVIDIA RTX mock',vram_used_global_mib:12000,vram_total_mib:16000,utilization_gpu_pct:34}]}}}
+const advancedState={...sumState,api_version:'0.5.0',parity:{'OFF/OFF':{pairs:4,same_visible:3,same_reasoning:2},'ON/ON':{pairs:4,same_visible:4,same_reasoning:1},'OFF/ON':{pairs:8,same_visible:2,same_reasoning:1}},quality_counts:{pass:5,fail:2,unverified:3,manual_review:6,incomplete:0},hardware_info:{engine_version:'llama.cpp b12292',gpu_layers_arg:'auto',gpu:{gpus:[{name:'NVIDIA RTX mock',vram_used_global_mib:12000,vram_total_mib:16000,utilization_gpu_pct:34}]}}}
 const advancedText=treeText(renderFor(advancedState,'en'))
 assert(advancedText.includes('Output reproducibility'),'Parity overview is missing')
 assert(advancedText.includes('Quality assessment'),'Quality overview is missing')
 assert(advancedText.includes('Hardware diagnostics'),'Hardware metrics overview missing')
 assert(advancedText.includes('Unverified'),'Unverified code verdict must be visible')
-const genericState={api_version:'0.4.0',state:'idle',model:'My-MoE-Q5_K_M',models:[{id:'My-MoE-Q5_K_M',mtp_supported:true}],
+const genericState={api_version:'0.5.0',state:'idle',model:'My-MoE-Q5_K_M',models:[{id:'My-MoE-Q5_K_M',mtp_supported:true}],
  selected:{id:'My-MoE-Q5_K_M',model_path:'E:/Models/My-MoE-Q5_K_M.gguf',mtp_kind:'external',mtp_supported:true,has_mmproj:false,mtp_head:'',mmproj:''},owns_router:true,tasks_per_phase:4}
 const genericTree=renderFor(genericState,'en')
 assert(treeText(genericTree).includes('My-MoE-Q5_K_M'),'Model picker must list arbitrary installed GGUF models')
+assert(treeText(genericTree).includes('Reasoning mode'),'Reasoning selector label must be translated')
+assert(treeText(genericTree).includes('Request no reasoning'),'No-thinking benchmark option missing')
+assert(treeText(genericTree).includes('Native model reasoning'),'Native reasoning benchmark option missing')
 assert(treeText(genericTree).includes('Text-only tasks'),'Absent mmproj should be shown as text-only')
 const modelSelector=findNode(genericTree,node=>node.type==='select'&&node.props.value==='My-MoE-Q5_K_M')
 assert(modelSelector,'Arbitrary model must be selectable in desktop UI')

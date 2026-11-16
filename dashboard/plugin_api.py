@@ -11,7 +11,7 @@ except ImportError:
     spec=importlib.util.spec_from_file_location('hermes_mtp_lab_bench_core',file)
     bench=importlib.util.module_from_spec(spec);spec.loader.exec_module(bench)
 router=APIRouter()
-API_VERSION="0.4.0"
+API_VERSION="0.5.0"
 
 def environment():
     sup,preset,comp,models=bench.get_model_environment()
@@ -50,6 +50,8 @@ def status():
         s['mtp_manifest_flag']=selected['persistent_flag'] if selected else None
         s['tasks_per_phase']=len([x for x in bench.TASKS if not x['image'] or (selected and selected['has_mmproj'])])
         s['measurements_per_task_per_cycle']=4
+        s['reasoning_modes']=['off','native']
+        s['reasoning_modes']=['off','native']
         s['quality_methods']={'structured':'exact_json','code':'optional_local_docker_sandbox',
                               'grounding':'reference_heuristic','open_ended':'human_review'}
         from hermes_cli.local_runtime.bootstrap import assets_dir
@@ -94,6 +96,8 @@ def start(body:dict):
     trials=body.get('trials',1)
     if type(trials) is not int or trials not in (1,3):raise HTTPException(400,'trials must be 1 or 3')
     if bench.STATE.read()['state']=='running':raise HTTPException(409,'Benchmark already running')
+    reasoning_mode=body.get('reasoning_mode','off')
+    if reasoning_mode not in bench.REASONING_MODES:raise HTTPException(400,'reasoning_mode must be off or native')
     try:
         bench.ensure_owned_idle()
         _,_,comp,models,mid=environment()
@@ -102,7 +106,7 @@ def start(body:dict):
         from hermes_cli.local_runtime.bootstrap import assets_dir
         if (Path(assets_dir())/'.mtp-lab-pending.json').exists():
             raise RuntimeError('A recovery marker exists; restore original presets first')
-        total=bench.execute_benchmark(mid,trials)
+        total=bench.execute_benchmark(mid,trials,reasoning_mode)
     except Exception as exc:raise HTTPException(409,str(exc))
     return {'ok':True,'model_id':mid,'total':total}
 

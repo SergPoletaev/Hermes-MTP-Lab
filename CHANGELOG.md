@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.5.0 — Fixed paired protocol, controllable reasoning and self-contained QA
+
+- Default no-thinking request via llama.cpp chat-template parameters, plus optional native reasoning. Never silently assert that a template obeyed the request.
+- Replaced oversized open-ended prompts with bounded, gradeable tasks; identical fixed generation budgets for paired OFF/ON, no adaptive regeneration.
+- Separated absent launch flags from actual mismatches in comparability.json.
+- Exported protocol.json containing exact prompts/greedy flags and copied reference photograph into vision run reports.
+- Updated GUI strings and controls, REST API, multilingual README and test suite; preserved Windows installer and existing Hermes isolation.
+
+
 ## 0.4.0 — Paired quality, reproduction and hardware checks
 
 - Implemented OFF/OFF, ON/ON and OFF/ON parity with separate visible/reasoning fields, output review files and 1-/3-cycle balanced runs.

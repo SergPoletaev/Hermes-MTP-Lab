@@ -137,11 +137,43 @@ class ModelAgnosticTests(unittest.TestCase):
         self.assertEqual(core.phase_order(1),['ON','OFF'])
         self.assertEqual(core.phase_order(2),['OFF','ON'])
         code=next(t for t in core.TASKS if t['id']=='code')
-        self.assertEqual(core.token_budget(code,32768),1024)
+        self.assertEqual(core.token_budget(code,32768),1536)
         self.assertEqual(core.token_budget(code,2048),512)
-        self.assertEqual(core.maybe_retry({'finish_reason':'length','usage':{'completion_tokens':512}},512,8192),1024)
-        self.assertIsNone(core.maybe_retry({'finish_reason':'stop','usage':{'completion_tokens':200}},512,8192))
-        self.assertIsNone(core.maybe_retry({'finish_reason':'length','usage':{'completion_tokens':2048}},2048,32768))
+        self.assertTrue(core.is_truncated({'finish_reason':'length'},768))
+        self.assertFalse(core.is_truncated({'finish_reason':'stop','usage':{'completion_tokens':200}},768))
+        self.assertTrue(core.is_truncated({'finish_reason':None,'usage':{'completion_tokens':767}},768))
+        self.assertEqual(core.REASONING_MODES,('off','native'))
+    def test_comparability_reports_unknown_separately_from_mismatch(self):
+        common={'ctx':'32768','kv_k':'q8_0','kv_v':'q8_0','flash':'on',
+                'batch':'','ubatch':'','mmproj':True,'gpu_layers':None,
+                'engine_version':'build 12292'}
+        rows=[{'trial':1,'task':'code','replica':1,'phase':p,'token_limit':1536} for p in ('OFF','ON')]
+        comparison=core.compare_configuration({'OFF':{**common,'mtp':False},'ON':{**common,'mtp':True,'spec_type':'draft-mtp'}},rows)
+        self.assertEqual(comparison['status'],'uncertain')
+        self.assertEqual(comparison['differences'],{})
+        self.assertIn('batch',comparison['unknown_fields'])
+        self.assertEqual(comparison['unequal_caps'],0)
+        mismatch=core.compare_configuration({'OFF':common,'ON':{**common,'kv_k':'f16'}},rows)
+        self.assertEqual(mismatch['status'],'mismatch')
+        self.assertIn('kv_k',mismatch['differences'])
+    def test_request_policy_off_and_native(self):
+        class Fake:
+            base_url='http://127.0.0.1:18434/v1'
+            api_key='not-real'
+        seen=[]
+        def fake_http(url,key,body,timeout=480):
+            seen.append(body)
+            return {'usage':{'completion_tokens':10},'choices':[{'finish_reason':'stop','message':{'content':'OK'}}]}
+        with patch.object(core,'http_json',side_effect=fake_http):
+            for mode in ('off','native'):
+                core.route_request(Fake(),'Demo',{'prompt':'hello','image':False},None,128,reasoning_mode=mode)
+        self.assertEqual(seen[0]['chat_template_kwargs'],{'enable_thinking':False})
+        self.assertEqual(seen[0]['reasoning_effort'],'none')
+        self.assertNotIn('chat_template_kwargs',seen[1])
+        self.assertNotIn('reasoning_effort',seen[1])
+        for key in core.REQUEST_CONTRACT:
+            self.assertEqual(seen[0][key],seen[1][key])
+
     def test_quality_statistics_are_not_timing_validity(self):
         rows=[{'group':'Test','phase':'OFF','valid':True,'decode_tps':10,'elapsed':1,'accepted':0,'drafted':0,'quality':{'status':'fail'}},
               {'group':'Test','phase':'ON','valid':True,'decode_tps':20,'elapsed':1,'accepted':100,'drafted':125,'quality':{'status':'pass'}}]

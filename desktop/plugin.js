@@ -5,7 +5,7 @@ import { ROUTES_AREA, SIDEBAR_NAV_AREA, PALETTE_AREA, host, usePluginI18n } from
 // stage codes and raw diagnostic details; the active UI language never changes a run.
 const ID = 'hermes-mtp-lab'
 const PREF_KEY = 'hermes-mtp-lab:language'
-const API_VERSION = '0.4.0'
+const API_VERSION = '0.5.0'
 const STRINGS = {
   ru: {
     language:'Язык', languageAuto:'Авто / Hermes', languageRu:'Русский', languageEn:'English',
@@ -14,7 +14,7 @@ const STRINGS = {
     checkConnection:'Проверить подключение', notOwner:'Локальный сервер не принадлежит текущему Hermes', notOwnerHelp:'Python API отвечает, но не подтвердил право управлять llama.cpp. Переключение заблокировано, чтобы не затронуть чужие процессы.', refresh:'Обновить статус',
     interrupted:'Обнаружен незавершённый тест — требуется восстановление', interruptedHelp:(flag)=>'Обнаружен аварийный маркер предыдущего запуска. Исходное состояние MTP: '+flag+'. Во время активного теста это предупреждение не показывается.', restore:'Восстановить исходный MTP',
     control:'Управление MTP', flag:'Флаг', owner:'Владелец сервера', currentHermes:'текущий Hermes', unconfirmed:'не подтверждён', toggleHelp:'Переключение перезапускает только управляемый локальный runtime. Завершите генерацию в других чатах.', enable:'Включить MTP', disable:'Отключить MTP',
-    compare:'Контрольный MTP-бенчмарк', compareHelp:'Каждый цикл: два OFF и два ON на задание; порядок фаз чередуется между циклами. Отдельно сравниваются видимые ответы и reasoning. 512–1024 токенов, автоматический повтор при обрыве (до 2048). Может длиться долго, особенно при CPU-offload.', quick:'Контроль · 1 цикл (4×)', full:'Углублённый · 3 цикла (12×)', stop:'Остановить после текущего запроса',
+    compare:'Контрольный MTP-бенчмарк', reasoningLabel:'Режим reasoning', reasoningOff:'Без reasoning (для оценки качества; зависит от шаблона модели)', reasoningNative:'Обычный режим модели (измерение с reasoning)', comparableUnknown:'неизвестно (нет части флагов)', comparableMismatch:'нет (известные параметры различаются)', comparableMatched:'да (все проверяемые поля совпадают)', compareHelp:'Каждый цикл: два OFF и два ON на задание; порядок фаз чередуется между циклами. Отдельно сравниваются видимые ответы и reasoning. Фиксированные лимиты 768–1536 токенов, без повторов при обрыве. Может длиться долго, особенно при CPU-offload.', quick:'Контроль · 1 цикл (4×)', full:'Углублённый · 3 цикла (12×)', stop:'Остановить после текущего запроса',
     executing:'Тест выполняется', phase:'Фаза', overall:'Всего', completed:'Завершено измерений', count:(done,total,pct)=>`${done} / ${total} измерений завершено${total?' · '+pct+'%':''}`, stageTime:'Время этапа', task:'Задание', repeat:'повтор',
     serverCounter:'Счётчик сервера', tokens:'токенов', limit:'лимит', tokenDisclaimer:'Счётчик генерации не гарантирует процент готовности ответа. При нестриминговом API обновления могут запаздывать.',
     loadingHint:'Модель загружается. Сервер не предоставляет достоверный процент загрузки.', requestHint:'Ожидание счётчиков сервера. Различить подготовку ответа и внутреннее размышление модели невозможно.', otherHint:'Этап выполняется. Достоверный процент внутри этапа недоступен.',
@@ -30,7 +30,7 @@ const STRINGS = {
     checkConnection:'Check connection', notOwner:'Local server is not owned by this Hermes process', notOwnerHelp:'The Python API is reachable, but ownership of the running llama.cpp process is not confirmed. Switching is disabled to protect unrelated processes.', refresh:'Refresh status',
     interrupted:'Unfinished previous benchmark — recovery required', interruptedHelp:(flag)=>'A recovery marker was left by an earlier run. Original MTP state: '+flag+'. This warning is hidden during a healthy active run.', restore:'Restore original MTP setting',
     control:'MTP controls', flag:'Flag', owner:'Server owner', currentHermes:'current Hermes', unconfirmed:'not confirmed', toggleHelp:'Switching restarts only the managed local runtime. Finish generation in other chats before switching.', enable:'Enable MTP', disable:'Disable MTP',
-    compare:'Controlled MTP benchmark', compareHelp:'Each cycle runs two OFF and two ON requests per task; phase order alternates between cycles. Visible output and reasoning are compared separately. 512–1024 tokens; one adaptive retry up to 2048 on truncation. Can take a long time with CPU offload.', quick:'Control · 1 cycle (4×)', full:'Extended · 3 cycles (12×)', stop:'Stop after current request',
+    compare:'Controlled MTP benchmark', reasoningLabel:'Reasoning mode', reasoningOff:'Request no reasoning (for quality; template-dependent)', reasoningNative:'Native model reasoning (full thinking workload)', comparableUnknown:'unknown (some flags not exposed)', comparableMismatch:'no (known settings differ)', comparableMatched:'yes (all inspected flags matched)', compareHelp:'Each cycle runs two OFF and two ON requests per task; phase order alternates between cycles. Visible output and reasoning are compared separately. Fixed 768–1536-token caps with no adaptive retries on truncation. Can take a long time with CPU offload.', quick:'Control · 1 cycle (4×)', full:'Extended · 3 cycles (12×)', stop:'Stop after current request',
     executing:'Benchmark running', phase:'Phase', overall:'Total', completed:'Completed measurements', count:(done,total,pct)=>`${done} / ${total} measurements completed${total?' · '+pct+'%':''}`, stageTime:'Stage elapsed', task:'Task', repeat:'repeat',
     serverCounter:'Server token counter', tokens:'tokens', limit:'limit', tokenDisclaimer:'The generation counter is not a reliable percentage of answer completion. Non-streaming responses may delay metric updates.',
     loadingHint:'The model is loading. The server does not provide a reliable loading percentage.', requestHint:'Waiting for server counters. Answer preparation and internal model reasoning cannot be distinguished reliably.', otherHint:'This stage is active. No reliable internal percentage is available.',
@@ -83,6 +83,7 @@ function LabView({ ctx }) {
   const [connected, setConnected] = useState(false)
   const [now, setNow] = useState(Date.now())
   const [language,setLanguage] = useState(storedLanguage)
+  const [reasoningMode,setReasoningMode] = useState('off')
   const [headOptions,setHeadOptions] = useState([])
   const [headChoice,setHeadChoice] = useState('')
   // ChatVault also uses the Hermes SDK locale, with an explicit local override.
@@ -177,7 +178,7 @@ function LabView({ ctx }) {
   return h('div',{style:{maxWidth:980,padding:'18px 24px',fontSize:14,color:'var(--ui-text-primary)',overflow:'auto',height:'100%'}},
     h('style',{},'@keyframes mtp-lab-scan { 0% { transform:translateX(-120%); } 50% { transform:translateX(150%); } 100% { transform:translateX(360%); } }'),
     h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:16,flexWrap:'wrap'}},
-      h('div',{},h('h2',{style:{fontSize:21,fontWeight:700,marginBottom:5}},tr('title')+' · v0.4.0'),h('p',{style:muted},tr('intro'))),
+      h('div',{},h('h2',{style:{fontSize:21,fontWeight:700,marginBottom:5}},tr('title')+' · v0.5.0'),h('p',{style:muted},tr('intro'))),
       h('label',{style:{...muted,display:'flex',alignItems:'center',gap:8},htmlFor:'mtp-lab-language'},
         tr('language'),h('select',{id:'mtp-lab-language',value:language,'aria-label':tr('language'),onChange:e=>changeLanguage(e.target.value),style:{...btn,margin:0,minWidth:145}},
           h('option',{value:'auto'},tr('languageAuto')),h('option',{value:'ru'},tr('languageRu')),h('option',{value:'en'},tr('languageEn'))))),
@@ -233,8 +234,14 @@ function LabView({ ctx }) {
       h('button',{style:btn,disabled:toggleDisabled,onClick:()=>act('/toggle',{enabled:false})},tr('disable'))),
     h('section',{style:block},h('div',{style:{fontWeight:650,marginBottom:6}},tr('compare')),
       h('p',{style:muted},tr('compareHelp')+' '+(state?.selected?.has_mmproj?'':tr('textOnly'))),
-      h('button',{style:btn,disabled:toggleDisabled,onClick:()=>act('/start',{trials:1})},tr('quick')),
-      h('button',{style:btn,disabled:toggleDisabled,onClick:()=>act('/start',{trials:3})},tr('full')),
+      h('label',{style:{...muted,display:'flex',alignItems:'center',gap:8,marginBottom:10}},
+        tr('reasoningLabel'),
+        h('select',{value:reasoningMode,onChange:e=>setReasoningMode(e.target.value),
+          disabled:running||busy,style:{...btn,maxWidth:610,width:'75%'}},
+          h('option',{value:'off'},tr('reasoningOff')),
+          h('option',{value:'native'},tr('reasoningNative')))),
+      h('button',{style:btn,disabled:toggleDisabled,onClick:()=>act('/start',{trials:1,reasoning_mode:reasoningMode})},tr('quick')),
+      h('button',{style:btn,disabled:toggleDisabled,onClick:()=>act('/start',{trials:3,reasoning_mode:reasoningMode})},tr('full')),
       h('button',{style:btn,disabled:!running||busy,onClick:()=>act('/cancel',{})},tr('stop')),
       h('div',{style:{marginTop:14,display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}},
         h('strong',{},running?tr('executing'):stageName),
@@ -257,8 +264,10 @@ function LabView({ ctx }) {
       h('div',{style:{overflowX:'auto'}},h('table',{style:{width:'100%',borderCollapse:'collapse',textAlign:'left'}},
         h('thead',{},h('tr',{},['workload','offSpeed','onSpeed','speedup','accepted'].map((key,i)=>h('th',{key:i,style:{padding:7,borderBottom:'1px solid var(--ui-stroke-secondary)'}},tr(key))))),
         h('tbody',{},state.summary.map((s,i)=>h('tr',{key:i},[groupText(s.group),s.off_tps??'—',s.on_tps??'—',s.speedup==null?'—':s.speedup+'×',s.on_accepted+'/'+s.on_drafted].map((v,j)=>h('td',{key:j,style:{padding:7,borderBottom:'1px solid var(--ui-stroke-secondary)'}},v))))))),
-      h('p',{style:muted},tr('comparable')+': '+tr(state?.comparable?'yes':'no')),
-      !state?.comparable?h('p',{style:{...muted,color:'var(--ui-danger,#b77d4c)'}},tr('comparableWarning')):null,
+      h('p',{style:muted},tr('comparable')+': '+tr(state?.comparability?.status==='matched'?'comparableMatched':state?.comparability?.status==='mismatch'?'comparableMismatch':'comparableUnknown')),
+      state?.comparability?.status!=='matched'?h('p',{style:{...muted,color:'var(--ui-danger,#b77d4c)'}},
+        tr('comparableWarning')+' '+(state?.comparability?.unknown_fields||[]).join(', ')+
+        ' '+Object.keys(state?.comparability?.differences||{}).join(', ')):null,
       h('p',{style:muted},tr('reports')+': '+state?.report_path),
       h('p',{style:muted},tr('restored')+': '+(state?.restored?tr('yes'):tr('restoreCheck'))),
       state?.parity?h('div',{style:{marginTop:12}},

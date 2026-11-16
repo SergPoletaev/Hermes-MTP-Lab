@@ -4,7 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 import argparse, zipfile
 ROOT = Path(__file__).resolve().parents[1]
-VERSION='0.4.0'
+VERSION='0.5.0'
 PROJECT='Hermes-MTP-Lab'
 PREFIX='Hermes_MTP_Lab_v'+VERSION
 PLUGIN_TOP=['plugin.yaml','__init__.py']
@@ -34,7 +34,7 @@ def write_zip(dest:Path, files:list[Path], prefix=''):
     dest.parent.mkdir(parents=True,exist_ok=True)
     with zipfile.ZipFile(dest,'w',compression=zipfile.ZIP_DEFLATED,compresslevel=9) as z:
         for p in files:
-            zi=zipfile.ZipInfo(prefix+p.relative_to(ROOT).as_posix(),date_time=(2026,11,15,0,0,0))
+            zi=zipfile.ZipInfo(prefix+p.relative_to(ROOT).as_posix(),date_time=(2026,11,16,0,0,0))
             zi.compress_type=zipfile.ZIP_DEFLATED
             zi.external_attr=(0o644<<16)
             z.writestr(zi,p.read_bytes(),compress_type=zipfile.ZIP_DEFLATED,compresslevel=9)

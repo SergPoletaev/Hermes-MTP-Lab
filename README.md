@@ -2,9 +2,9 @@
 
 # Hermes MTP Lab
 
-**v0.4.0 · Automatic MTP A/B benchmark for Hermes Desktop · MIT**
+**v0.5.0 · Automatic MTP A/B benchmark for Hermes Desktop · MIT**
 
-![Hermes MTP Lab — интерфейс бенчмарка / benchmark interface](docs/assets/mtp-lab-dashboard.png)
+![Hermes MTP Lab v0.5.0 — демонстрационный рендер интерфейса, не реальный тест / UI demonstration, not live test](docs/assets/mtp-lab-dashboard.png)
 
 
 **Навигация / Navigation / 导航 / नेविगेशन:** [Русский](#ru) · [English](#en) · [简体中文](#zh) · [हिन्दी](#hi) · [Конец / End](#end)
@@ -23,12 +23,12 @@
 - **Контрольный тест:** 16 измерений для текстовой модели или 24 для модели с mmproj. **Углублённый тест:** 48 или 72 измерения соответственно. В каждом цикле предусмотрены OFF/OFF, ON/ON и OFF/ON, а порядок фаз между циклами чередуется.
 - Текст, Python-код, вычисления, повествование, описание изображения, распознавание надписей и пространственных связей. Оригинальная тестовая картинка включена в архив.
 - Отображение загрузки модели, прогрева, этапа генерации, времени всего теста и текущего этапа, реальных токенов при наличии серверных метрик. Неизвестный процент загрузки **не выдумывается**.
-- Скорость декодирования (медиана, MAD), MTP draft/accepted, контроль воспроизводимости видимого текста и reasoning, аппаратная диагностика и отчёты `summary.md`, `results.csv`, `results.json`, `answers.jsonl`, `comparisons.json`, `hardware.json`, `task_summary.json`.
+- Скорость декодирования (медиана, MAD), MTP draft/accepted, контроль воспроизводимости видимого текста и reasoning, аппаратная диагностика и девять файлов отчёта, включая `summary.md`, `results.csv`, `results.json`, `answers.jsonl`, `comparisons.json`, `hardware.json`, `task_summary.json`, `comparability.json`, `protocol.json`.
 - Побайтовое восстановление исходного нативного preset после теста; резервные копии и восстановление при прерывании.
 
 **Важно:** в Hermes существуют режимы чата **Auto, Native, Text**. Названия групп MTP Lab — это **типы серверной нагрузки**, а не режимы чата. Плагин проводит запросы напрямую через локальный `llama.cpp`; он **не** измеряет задержку UI, время до первого токена или полный цикл работы Auto/Native/Text. Если параметры OFF и ON нельзя подтвердить одинаковыми, ускорение считается **наблюдаемым**, а не строго приписываемым MTP.
 
-**Проверка качества v0.4.0.** Вычисления сверяются с эталонными числами; на тестовой фотографии проверяются надпись `TEST 47` и порядок цветов красный–зелёный–жёлтый. Python-код исполняется только в заранее установленном ограниченном Docker-контейнере; при его отсутствии результат честно отмечается как «не проверено» (на Windows код модели не запускается). Открытые тексты требуют ручной оценки. При обрыве ответа лимит увеличивается один раз, максимум до 2048 токенов. Собираются доступные сведения о GPU/VRAM, версии движка, аргументах offload и GGUF. Реальное число выгруженных в GPU слоёв не выдумывается, а значения общесистемной VRAM не выдаются за память одной модели. Тест может занять часы на частично выгруженных моделях.
+**Проверка качества v0.5.0.** Вычисления сверяются с эталонными числами; на тестовой фотографии проверяются надпись `TEST 47` и порядок цветов красный–зелёный–жёлтый. Python-код исполняется только в заранее установленном ограниченном Docker-контейнере; при его отсутствии результат честно отмечается как «не проверено» (на Windows код модели не запускается). Открытые тексты требуют ручной оценки. Запросы используют одинаковые фиксированные лимиты для OFF и ON (768–1536 токенов) без бесполезных повторных генераций; незавершённые ответы помечаются `incomplete`. Режим reasoning выбирается в интерфейсе: запрос без reasoning (по умолчанию, поддержка зависит от шаблона) или обычное мышление модели. Точные задания и эталонная фотография включены в отчёт. Собираются доступные сведения о GPU/VRAM, версии движка, аргументах offload и GGUF. Реальное число выгруженных в GPU слоёв не выдумывается, а значения общесистемной VRAM не выдаются за память одной модели. Тест может занять часы на частично выгруженных моделях.
 
 ### Совместимость
 
@@ -43,7 +43,7 @@ Hermes Desktop → **Capabilities → Plugins → Install from Git**: встав
 
 ### Установка из GitHub Release на Windows
 
-1. Скачайте **`Hermes_MTP_Lab_v0.4.0_PORTABLE_INSTALL.zip`** в [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) и **полностью распакуйте** в любую папку.
+1. Скачайте **`Hermes_MTP_Lab_v0.5.0_PORTABLE_INSTALL.zip`** в [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) и **полностью распакуйте** в любую папку.
 2. Полностью завершите Hermes Desktop, включая значок в трее.
 3. Дважды щёлкните `Install-Hermes-MTP-Lab.cmd`. Установщик копирует папку плагина, сохраняет резервную копию предыдущей версии и вызывает штатную команду `hermes plugins enable hermes-mtp-lab` для разрешения Python-бэкенда. Он не правит произвольный YAML вручную.
 4. Запустите Hermes; в **Возможности → Plugins** включите Desktop-компонент `MTP Lab`, если он отключён.
@@ -74,12 +74,12 @@ Hermes Desktop → **Capabilities → Plugins → Install from Git**: встав
 - **Control benchmark:** 16 text-only measurements or 24 with vision. **Extended benchmark:** 48 or 72, respectively. Every cycle includes OFF/OFF, ON/ON and OFF/ON comparisons; phase order alternates between cycles.
 - Explanation, Python programming, calculations, narrative writing, image description, visible text and object grounding. Includes the same original reference JPEG for both phases.
 - Live model-load and warmup stages, per-stage and overall timers, factual token counters when available, and indeterminate indicators instead of invented percentages.
-- Server-side decode tok/s (median, MAD), MTP draft acceptance, separately compared visible/reasoning text, GPU diagnostics and seven report files including `answers.jsonl`, `comparisons.json`, `hardware.json`, `task_summary.json`.
+- Server-side decode tok/s (median, MAD), MTP draft acceptance, separately compared visible/reasoning text, GPU diagnostics and nine report files including `answers.jsonl`, `comparisons.json`, `hardware.json`, `task_summary.json`, `comparability.json`, `protocol.json`.
 - Restores the exact original Hermes managed preset bytes after the run; backup and recovery safeguards for interruptions.
 
 **Scope:** Hermes chat offers **Auto, Native and Text** modes. MTP Lab workload categories are **not** these chat modes. The tests call local `llama.cpp` directly and do **not** benchmark the complete chat UX, desktop rendering or time to first token. If effective OFF/ON settings cannot be verified identical, reported speedup is *observational*, not a controlled estimate of MTP alone.
 
-**Quality checks in v0.4.0.** Calculations have fixed reference answers; the built-in image checks the `TEST 47` label and the red–green–yellow notebook order. Generated Python is executed **only** in an already cached, restricted Docker sandbox; otherwise code quality is explicitly unverified and model code never runs on the host. Open-ended responses need human review. Truncated replies receive one adaptive retry up to 2048 tokens. Available GPU/VRAM, engine, offload launch flags and GGUF fingerprints are recorded; system-wide GPU use is not mislabeled per-model VRAM and actual offloaded layer counts are never invented. Testing partially CPU-offloaded models may take hours.
+**Quality checks in v0.5.0.** Calculations have fixed reference answers; the built-in image checks the `TEST 47` label and the red–green–yellow notebook order. Generated Python is executed **only** in an already cached, restricted Docker sandbox; otherwise code quality is explicitly unverified and model code never runs on the host. Open-ended responses need human review. OFF/ON pairs use the same fixed 768–1536-token limits with no redundant reruns; truncated replies are `incomplete`. Choose request-side no-thinking (default, template-dependent) or native reasoning in Desktop. Exact prompts and the vision reference image are exported. Available GPU/VRAM, engine, offload launch flags and GGUF fingerprints are recorded; system-wide GPU use is not mislabeled per-model VRAM and actual offloaded layer counts are never invented. Testing partially CPU-offloaded models may take hours.
 
 ### Compatibility
 
@@ -92,7 +92,7 @@ In Hermes Desktop open **Capabilities → Plugins → Install from Git**, then e
 
 ### Windows installation from a GitHub release
 
-1. Download `Hermes_MTP_Lab_v0.4.0_PORTABLE_INSTALL.zip` from [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) and extract it fully to any folder.
+1. Download `Hermes_MTP_Lab_v0.5.0_PORTABLE_INSTALL.zip` from [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) and extract it fully to any folder.
 2. Fully **Quit Hermes**, including its tray process.
 3. Double-click `Install-Hermes-MTP-Lab.cmd`. It backs up the previous plugin, installs the package and uses the official `hermes plugins enable hermes-mtp-lab` command for the Python backend. It does not edit arbitrary YAML using text substitutions.
 4. Open Hermes → **Capabilities → Plugins** and enable the MTP Lab Desktop card if necessary.
@@ -123,12 +123,12 @@ This is an independent, unofficial community plugin for [NousResearch Hermes Age
 - **对照测试**：纯文本 16 次、有视觉投影器 24 次；**深入测试**：分别为 48 或 72 次。每轮对比 OFF/OFF、ON/ON 和 OFF/ON，轮次之间交替相位顺序。
 - 包含技术说明、Python 编程、计算、叙事写作、图像描述、文字识别和物体位置分析；两种状态使用同一张原创建议测试图片。
 - 显示模型加载、预热、生成阶段、总用时及阶段用时；只有服务器提供真实数据时才显示令牌计数，不伪造加载百分比。
-- 记录解码速度中位数及 MAD、MTP 草稿接受率、可见回答与 reasoning 的分别比较、GPU 只读诊断，以及包含 `answers.jsonl`、`comparisons.json`、`hardware.json` 的七种报告文件。
+- 记录解码速度中位数及 MAD、MTP 草稿接受率、可见回答与 reasoning 的分别比较、GPU 只读诊断，以及包含 `answers.jsonl`、`comparisons.json`、`hardware.json` 的九种报告文件。
 - 测试完成后逐字节恢复原始 Hermes 预设；提供备份与异常恢复。
 
 **重要说明：** Hermes 的聊天模式是 **Auto、Native、Text**；MTP Lab 的任务分类**不是**聊天模式。测试直接访问本地 `llama.cpp`，不测量桌面界面延迟或首令牌时间。若无法确认 OFF/ON 的其他参数一致，加速结果只应视为*观察值*，不能完全归因于 MTP。
 
-**v0.4.0 质量验证。** 计算题与确定的标准答案核对；图片检查 `TEST 47` 标签和红、绿、黄笔记本顺序。生成的 Python 代码**仅在已缓存的受限 Docker 沙箱中执行**；没有此环境时标为「未验证」，绝不在主机运行模型生成的代码。开放式回答需要人工审核。截断的回答最多自动重试一次，令牌上限 2048。报告记录可用的 GPU/显存、引擎版本、卸载参数和 GGUF 指纹，不把全系统显存误报为单个模型的用量，也不推测实际 GPU 层数。CPU 卸载较多时测试可能持续数小时。
+**v0.5.0 质量验证。** 计算题与确定的标准答案核对；图片检查 `TEST 47` 标签和红、绿、黄笔记本顺序。生成的 Python 代码**仅在已缓存的受限 Docker 沙箱中执行**；没有此环境时标为「未验证」，绝不在主机运行模型生成的代码。开放式回答需要人工审核。OFF/ON 使用相同的固定 768–1536 token 上限，不重复生成；截断结果标为 `incomplete`。界面可选择请求关闭推理（默认，取决于模型模板）或模型原生推理，报告保存原始题目与测试图片。报告记录可用的 GPU/显存、引擎版本、卸载参数和 GGUF 指纹，不把全系统显存误报为单个模型的用量，也不推测实际 GPU 层数。CPU 卸载较多时测试可能持续数小时。
 
 ### 兼容性
 
@@ -141,7 +141,7 @@ This is an independent, unofficial community plugin for [NousResearch Hermes Age
 
 ### Windows 安装
 
-1. 从 [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) 下载 `Hermes_MTP_Lab_v0.4.0_PORTABLE_INSTALL.zip`，完整解压到任意文件夹。
+1. 从 [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) 下载 `Hermes_MTP_Lab_v0.5.0_PORTABLE_INSTALL.zip`，完整解压到任意文件夹。
 2. 完全退出 Hermes，包括系统托盘中的程序。
 3. 双击 `Install-Hermes-MTP-Lab.cmd`。安装程序备份旧插件，并调用 Hermes 官方命令 `hermes plugins enable hermes-mtp-lab` 启用 Python 后端，而不会直接修改 YAML 文本。
 4. 启动 Hermes，在 **Capabilities → Plugins** 中按需启用 MTP Lab Desktop 插件。
@@ -175,12 +175,12 @@ This is an independent, unofficial community plugin for [NousResearch Hermes Age
 - **नियंत्रित परीक्षण:** केवल टेक्स्ट के लिए 16, mmproj वाले मॉडल के लिए 24 माप। **विस्तारित परीक्षण:** क्रमशः 48 या 72 माप। हर चक्र में OFF/OFF, ON/ON और OFF/ON तुलना होती है और चक्रों के बीच क्रम बदलता है।
 - तकनीकी व्याख्या, Python कोड, गणना, कहानी, तस्वीर का वर्णन, लिखे हुए शब्दों की पहचान और वस्तुओं के स्थान का विश्लेषण। दोनों अवस्थाओं में एक ही मूल परीक्षण JPEG इस्तेमाल होता है।
 - मॉडल लोडिंग, वॉर्म-अप, जनरेशन, कुल समय और वर्तमान चरण का समय दिखाता है। वास्तविक सर्वर आँकड़े उपलब्ध होने पर ही टोकन काउंटर दिखता है; मनगढ़ंत प्रतिशत नहीं दिखाए जाते।
-- टोकन/सेकंड की मीडियन और MAD, MTP ड्राफ़्ट स्वीकृति, दृश्य उत्तर एवं reasoning की अलग तुलना, केवल-पठन GPU निदान, तथा `answers.jsonl`, `comparisons.json`, `hardware.json`, `task_summary.json` सहित सात रिपोर्ट फ़ाइलें।
+- टोकन/सेकंड की मीडियन और MAD, MTP ड्राफ़्ट स्वीकृति, दृश्य उत्तर एवं reasoning की अलग तुलना, केवल-पठन GPU निदान, तथा `answers.jsonl`, `comparisons.json`, `hardware.json`, `task_summary.json`, `comparability.json`, `protocol.json` सहित नौ रिपोर्ट फ़ाइलें।
 - परीक्षण के बाद मूल Hermes प्रीसेट को बाइट-दर-बाइट बहाल करता है; बैकअप और रुकावट के बाद रिकवरी की सुविधा।
 
 **ध्यान दें:** Hermes में चैट मोड **Auto, Native और Text** हैं। MTP Lab के कार्य समूह इन मोडों के समान **नहीं** हैं। परीक्षण सीधे स्थानीय `llama.cpp` को भेजे जाते हैं और यूज़र इंटरफ़ेस का विलंब या पहले टोकन का समय नहीं मापते। यदि OFF/ON के अन्य पैरामीटर समान होने की पुष्टि न हो, तो दिखाई गई तेज़ी केवल *देखी गई गति* है, केवल MTP का प्रमाण नहीं।
 
-**v0.4.0 गुणवत्ता जाँच।** गणना के उत्तर निश्चित संदर्भ से जाँचे जाते हैं; चित्र में `TEST 47` और लाल–हरा–पीला नोटबुक क्रम जाँचा जाता है। जनरेट किया गया Python केवल **पहले से उपलब्ध, सीमित Docker सैंडबॉक्स** में चलाया जाता है; उसके बिना परिणाम 'असत्यापित' रहता है और होस्ट Windows पर कोड नहीं चलता। खुले उत्तरों की मानवीय समीक्षा आवश्यक है। उत्तर कटने पर 2048 टोकन तक एक अनुकूलित पुनःप्रयास किया जाता है। उपलब्ध GPU/VRAM, इंजन संस्करण, ऑफ़लोड फ़्लैग और GGUF विवरण रिकॉर्ड होते हैं; पूरे GPU के उपयोग को एक मॉडल की VRAM नहीं कहा जाता और वास्तविक ऑफ़लोड परतें अनुमान से नहीं जोड़ी जातीं। CPU ऑफ़लोड वाले मॉडल पर परीक्षण में कई घंटे लग सकते हैं।
+**v0.5.0 गुणवत्ता जाँच।** गणना के उत्तर निश्चित संदर्भ से जाँचे जाते हैं; चित्र में `TEST 47` और लाल–हरा–पीला नोटबुक क्रम जाँचा जाता है। जनरेट किया गया Python केवल **पहले से उपलब्ध, सीमित Docker सैंडबॉक्स** में चलाया जाता है; उसके बिना परिणाम 'असत्यापित' रहता है और होस्ट Windows पर कोड नहीं चलता। खुले उत्तरों की मानवीय समीक्षा आवश्यक है। OFF/ON में एक जैसी 768–1536 टोकन सीमा लागू होती है; बेकार दोहराव नहीं होता और अधूरे उत्तर `incomplete` रहते हैं। इंटरफ़ेस में reasoning बंद करने का अनुरोध (डिफ़ॉल्ट, मॉडल टेम्पलेट पर निर्भर) या मूल reasoning चुना जा सकता है। रिपोर्ट में मूल प्रश्न और परीक्षण छवि शामिल हैं। उपलब्ध GPU/VRAM, इंजन संस्करण, ऑफ़लोड फ़्लैग और GGUF विवरण रिकॉर्ड होते हैं; पूरे GPU के उपयोग को एक मॉडल की VRAM नहीं कहा जाता और वास्तविक ऑफ़लोड परतें अनुमान से नहीं जोड़ी जातीं। CPU ऑफ़लोड वाले मॉडल पर परीक्षण में कई घंटे लग सकते हैं।
 
 ### संगतता
 
@@ -193,7 +193,7 @@ Hermes Desktop → **Capabilities → Plugins → Install from Git** खोल�
 
 ### Windows पर स्थापना
 
-1. [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) से `Hermes_MTP_Lab_v0.4.0_PORTABLE_INSTALL.zip` डाउनलोड करके पूरा संग्रह किसी भी फ़ोल्डर में निकालें।
+1. [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) से `Hermes_MTP_Lab_v0.5.0_PORTABLE_INSTALL.zip` डाउनलोड करके पूरा संग्रह किसी भी फ़ोल्डर में निकालें।
 2. सिस्टम ट्रे सहित Hermes Desktop को पूरी तरह बंद करें।
 3. `Install-Hermes-MTP-Lab.cmd` पर डबल-क्लिक करें। इंस्टॉलर पुराने प्लगइन का बैकअप बनाता है और Python बैकएंड के लिए आधिकारिक `hermes plugins enable hermes-mtp-lab` कमांड चलाता है। यह मनमाने YAML टेक्स्ट को संपादित नहीं करता।
 4. Hermes खोलें और आवश्यकता होने पर **Capabilities → Plugins** में MTP Lab Desktop कार्ड सक्षम करें।
@@ -214,4 +214,4 @@ Hermes Desktop → **Capabilities → Plugins → Install from Git** खोल�
 ---
 
 <a id="end"></a>
-**Hermes MTP Lab · v0.4.0 · [↑ Back to top / К началу](#top)**
+**Hermes MTP Lab · v0.5.0 · [↑ Back to top / К началу](#top)**

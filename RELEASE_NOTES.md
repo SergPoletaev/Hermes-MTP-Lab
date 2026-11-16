@@ -1,20 +1,20 @@
-# Hermes MTP Lab v0.4.0 — Controlled MTP Quality & Performance Benchmark
+# Hermes MTP Lab v0.5.0 — Reliable paired benchmark and quality capture
 
-A complete, model-agnostic local Hermes MTP Lab update built from the clean public repository. No owner-side publishing scripts are included.
+This is a **complete** root-level Hermes plugin repository, not a patch. Desktop, Python backend, Windows installer, CI and 4-language README share version **0.5.0**.
 
-## Changes since v0.3.3
+## Fixes and behavior
 
-- Paired OFF/OFF, ON/ON, OFF/ON comparisons per task and trial, with reversed phase order in the middle of the three-cycle mode. Visible text and `reasoning_content` are tracked and compared separately.
-- Task-specific 512–1024-token budgets, `finish_reason` capture, one bounded adaptive retry (maximum 2048) and explicit `incomplete` results instead of silently grading truncated answers.
-- Exact JSON arithmetic reference checks, visual label/stack reference checks, and optional seven generated-code unit tests in an **already cached, restricted Docker** environment. Without Docker, generated code is not executed on the host and remains `unverified`.
-- Median, MAD, min/max and per-pair parity information; response mismatch does not automatically mean poor output quality.
-- Read-only GPU telemetry, requested GPU-layer and KV launch settings, engine version where available, process RSS and model/head identity. No fake actual GPU-layer or per-process VRAM figures.
-- Added `quality_eval.py`, `hardware_diag.py`, regression tests, updated Desktop RU/EN interface and four-language README.
-- Exact original preset byte restoration remains unchanged. Other Hermes plugins, Chat Share, cloud providers and CUDA settings are untouched.
+- **No more redundant adaptive retries.** The v0.4.0 benchmark repeatedly exhausted 2,048 tokens of unbounded reasoning and returned 24 incomplete outputs. v0.5.0 uses an early no-thinking probe, short prompts, fixed 768–1,536-token budgets, and records incomplete responses without running a second full generation.
+- **Reasoning selector:** default `off` sends `chat_template_kwargs.enable_thinking=false` and `reasoning_effort=none` to llama.cpp. `native` keeps default model behavior for throughput tests. Actual reasoning is still reported since model templates may ignore the request.
+- **Paired comparability:** no more mislabeling missing `batch`, `ubatch`, or `gpu_layers` launch flags as an observed mismatch. `comparability.json` distinguishes unknown settings from unequal known settings and unequal paired token caps.
+- **Self-contained reports:** add `protocol.json` (task prompts, caps, request flags), `comparability.json`, and exact reference image `assets/benchmark_scene.jpg` when vision tasks run. Existing report files remain.
+- Fixed OFF/OFF, ON/ON and OFF/ON repeats, safe restore/recovery, model/head/mmproj selection, 4-language documentation, and no public publishing scripts.
 
-## Release artifacts
+## Packages
 
-- `Hermes_MTP_Lab_v0.4.0_PORTABLE_INSTALL.zip` — plugin with Windows installer and docs.
-- `Hermes_MTP_Lab_v0.4.0_FULL_SOURCE.zip` — complete audited GitHub source with tests and CI.
+- `Hermes_MTP_Lab_v0.5.0_PORTABLE_INSTALL.zip` — installable plugin and Windows installer.
+- `Hermes_MTP_Lab_v0.5.0_FULL_SOURCE.zip` — public GitHub root with tests, CI and release build tools.
 
-The benchmark does **not** automatically install Docker, download images or alter local inference engines. Use the Hermes-managed local model and verify the selected model/head pairing independently. Runtime testing requires the user's own Windows/Hermes environment.
+## Verification scope
+
+Offline Python tests, Desktop JavaScript mock registration, source allowlist verification, both ZIP archives and their byte-for-byte contents. Real llama.cpp Gemma 4 MTP execution on the user's Windows RTX 4060 Ti cannot be performed in this test environment. The project never automatically replaces llama.cpp or Python/CUDA DLLs. Running the fixed protocol with the user's model is required to validate real runtime compatibility.
