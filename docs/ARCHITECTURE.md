@@ -16,7 +16,7 @@ The Git repository root is the self-contained Hermes hybrid plugin (`plugin.yaml
 
 `dashboard/model_support.py` reads **Hermes managed model presets** and the optional `model-companions.json` mapping. The user selects an exact model ID and can select a compatible separate MTP-head GGUF and optional vision projector using discovered choices or the native GGUF file picker; the last-used chooser directory is persisted via `ctx.storage` and defaults to the model folder. Nearby candidate files are ranked by filename but never automatically paired. Models with embedded MTP are eligible when the native preset or supported GGUF metadata confirms it. A missing projector simply removes image workloads; missing MTP support blocks the benchmark.
 
-The benchmark copies the original `presets.ini` bytes to a unique backup, writes an interrupt-recovery marker, modifies **only the selected model section** for an OFF or ON phase, calls the existing `sup.reload_presets()` on the owned idle router, and verifies the child process flags plus speculative token acceptance. On completion it restores the exact original preset bytes and reloads the router. It does not alter unrelated model sections or reconfigure cloud providers. Manual toggles are temporary and may be reset by the native Hermes planner.
+The benchmark copies the original `presets.ini` bytes to a unique backup (written atomically since v0.5.2, so a crash mid-write can never corrupt the recovery source), writes an interrupt-recovery marker, modifies **only the selected model section** for an OFF or ON phase — preserving a native UTF-8 BOM byte-for-byte — calls the existing `sup.reload_presets()` on the owned idle router, and verifies the child process flags plus speculative token acceptance. On completion it restores the exact original preset bytes and reloads the router, and prunes older preset backups beyond the newest five. It does not alter unrelated model sections or reconfigure cloud providers. Manual toggles are temporary and may be reset by the native Hermes planner.
 
 `model-companions.json` is only changed by an explicit user action saving a head/projector mapping; a backup of that file is created first. Declaring an MTP head does not prove architectural compatibility: actual llama.cpp loading and token acceptance remain mandatory.
 
@@ -31,6 +31,10 @@ The benchmark copies the original `presets.ini` bytes to a unique backup, writes
 ## Repository validation and CI
 
 The public repository contains the Hermes plugin, installers, documentation, tests and CI workflows only. Owner-side publishing credentials and publishing scripts are not part of the repository and are not CI dependencies. `requirements-ci.txt` supplies FastAPI and HTTPX for clean GitHub runners. The source builder uses the verifier’s explicit file allowlist; every release entry is compared byte-for-byte against the audited source. Deleting or excluding private publishing scripts must not make any CI job fail.
+
+## v0.5.2 robustness hardening
+
+All automatic backups (preset, companion-config, manual-toggle) are atomic. Request timeouts derive from the warm-up probe per-token latency (bounded 480–7200 s). `mmproj`/MTP-head candidate discovery is cached per folder fingerprint so the status poll does not rescan GGUF folders; the cache invalidates on folder changes. A missing bundled reference image fails vision runs fast with a reinstall hint and degrades report generation gracefully instead of destroying results. The Docker code-sandbox harness reads the whole stdin payload (capped at 100 000 characters) rather than truncating at 25 000.
 
 ## v0.5.1 controlled evaluation
 

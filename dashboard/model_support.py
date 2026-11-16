@@ -27,6 +27,29 @@ def atomic_write(path: Path, blob: bytes) -> None:
         if temp.exists(): temp.unlink()
 
 
+def prune_backups(directory: Path, pattern: str, keep: int = 5) -> list[str]:
+    """Delete the oldest automatic backups beyond the newest `keep` files.
+
+    Backup names embed a sortable timestamp, so lexicographic order equals
+    chronological order. Only files matching the exact plugin pattern are ever
+    considered; failures to stat or unlink are silently ignored (pruning is
+    best-effort housekeeping, never a run requirement).
+    """
+    try:
+        items = sorted((p for p in directory.glob(pattern) if p.is_file()),
+                       key=lambda p: p.name)
+    except OSError:
+        return []
+    removed = []
+    for old in (items[:-keep] if len(items) > keep else []):
+        try:
+            old.unlink()
+            removed.append(old.name)
+        except OSError:
+            pass
+    return removed
+
+
 def ini_sections(content:str)->dict[str,dict[str,str]]:
     result={}; active=None
     for line in content.splitlines():
@@ -218,12 +241,48 @@ def _projector_score(model_stem: str, candidate_stem: str) -> int:
     return score
 
 
+def _folder_fingerprint(folder: Path) -> tuple:
+    """Cheap change detector for candidate folders used by the status poll.
+
+    The directory mtime plus per-GGUF (name, mtime) pairs invalidates the cache
+    when files are added, removed or replaced, without rescanning contents.
+    """
+    try:
+        entries = []
+        for item in sorted(folder.iterdir(), key=lambda p: p.name.casefold()):
+            if item.suffix.casefold() != '.gguf':
+                continue
+            st = item.stat()
+            entries.append((item.name, st.st_mtime_ns, st.st_size))
+        return (str(folder), folder.stat().st_mtime_ns, tuple(entries))
+    except OSError:
+        return (str(folder),)  # Uncacheable: fall back to a direct scan.
+
+
+@lru_cache(maxsize=64)
+def _projector_candidates_cached(model_path: str, directory: str | None,
+                                  fingerprint: tuple) -> tuple[dict, ...]:
+    return tuple(_projector_candidates_scan(model_path, directory))
+
+
 def projector_candidates(model_path: str, directory: str | None = None) -> list[dict]:
     """Scan only model's immediate folder or a user-chosen folder.
 
     No recursive scan and no automatic selection or persistent writes. Inspect
     the GGUF magic before presenting an option; name ranking is a hint only.
+    Results are cached per folder fingerprint so the 1.5-second status poll does
+    not repeatedly stat every GGUF on slow/network drives.
     """
+    folder = Path(directory) if directory else Path(model_path).parent
+    if not folder.is_dir():
+        return []
+    fingerprint = _folder_fingerprint(folder)
+    if len(fingerprint) == 1:
+        return _projector_candidates_scan(model_path, directory)
+    return list(_projector_candidates_cached(model_path, directory, fingerprint))
+
+
+def _projector_candidates_scan(model_path: str, directory: str | None) -> list[dict]:
     model=Path(model_path)
     folder=Path(directory) if directory else model.parent
     if not folder.is_dir():return []
@@ -248,8 +307,25 @@ def projector_candidates(model_path: str, directory: str | None = None) -> list[
     return result[:30]
 
 
+@lru_cache(maxsize=64)
+def _head_candidates_cached(model_path: str, directory: str | None,
+                            fingerprint: tuple) -> tuple[dict, ...]:
+    return tuple(_head_candidates_scan(model_path, directory))
+
+
 def head_candidates(model_path:str,directory:str|None=None)->list[dict]:
-    """Offer plausible external MTP GGUFs only; no automatic binding."""
+    """Offer plausible external MTP GGUFs only; no automatic binding.
+
+    Cached per folder fingerprint exactly like projector_candidates."""
+    folder = Path(directory) if directory else Path(model_path).parent
+    if not folder.is_dir():return []
+    fingerprint = _folder_fingerprint(folder)
+    if len(fingerprint) == 1:
+        return _head_candidates_scan(model_path, directory)
+    return list(_head_candidates_cached(model_path, directory, fingerprint))
+
+
+def _head_candidates_scan(model_path:str,directory:str|None=None)->list[dict]:
     model=Path(model_path)
     folder=Path(directory) if directory else model.parent
     if not folder.is_dir():return []
@@ -375,6 +451,7 @@ def set_companion(path:Path,model_id:str,model_ids:set[str],mtp_head:str,mmproj:
     if path.exists():
         import datetime
         backup=path.with_name(path.name+'.mtp-lab-config-'+datetime.datetime.now().strftime('%Y%m%d-%H%M%S-%f'))
-        backup.write_bytes(path.read_bytes())
+        atomic_write(backup,path.read_bytes())
     atomic_write(path,(json.dumps(obj,ensure_ascii=False,indent=2)+'\n').encode('utf-8'))
+    prune_backups(path.parent,path.name+'.mtp-lab-config-*')
     return spec

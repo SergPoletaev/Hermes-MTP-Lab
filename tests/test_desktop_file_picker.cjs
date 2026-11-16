@@ -5,7 +5,7 @@ assert(!src.includes('ctx.files.requestFolder('),'GGUF chooser may not request f
 const stripped=src.replace(/^import .*?\n/gm,'').replace('export default {','globalThis.TEST_PLUGIN = {')+'\nglobalThis.TEST_LABVIEW = LabView;'
 const persisted=new Map(),calls=[]
 const stored={get:(key,fallback)=>persisted.get(key)??fallback,set:(key,val)=>persisted.set(key,val)}
-const state={api_version:'0.5.1',state:'idle',model:'Test-Q4',owns_router:true,
+const state={api_version:'0.5.2',state:'idle',model:'Test-Q4',owns_router:true,
   models:[{id:'Test-Q4'}],selected:{id:'Test-Q4',model_path:'E:\\AI\\Models\\Test-Q4.gguf',mtp_kind:'external',mtp_supported:true,has_mmproj:false,mtp_head:'',mmproj:''}}
 let response=null, updates={}, picks=[],language='ru'
 const ctx={i18n:{register(){}},storage:stored,os:{async pickOpenPath(options){picks.push(options);return response}},rest:async()=>state,

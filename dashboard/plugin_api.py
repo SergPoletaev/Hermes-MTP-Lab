@@ -1,8 +1,11 @@
 """Local-only MTP Lab API: user-selected managed model, never a hardcoded GGUF."""
-from fastapi import APIRouter, HTTPException
-from pathlib import Path
+import hashlib
 import json
 import time
+from datetime import datetime
+from pathlib import Path
+
+from fastapi import APIRouter, HTTPException
 try:
     from . import bench_core as bench
 except ImportError:
@@ -11,7 +14,7 @@ except ImportError:
     spec=importlib.util.spec_from_file_location('hermes_mtp_lab_bench_core',file)
     bench=importlib.util.module_from_spec(spec);spec.loader.exec_module(bench)
 router=APIRouter()
-API_VERSION="0.5.1"
+API_VERSION="0.5.2"
 
 def environment():
     sup,preset,comp,models=bench.get_model_environment()
@@ -50,7 +53,6 @@ def status():
         s['mtp_manifest_flag']=selected['persistent_flag'] if selected else None
         s['tasks_per_phase']=len([x for x in bench.TASKS if not x['image'] or (selected and selected['has_mmproj'])])
         s['measurements_per_task_per_cycle']=4
-        s['reasoning_modes']=['off','native']
         s['reasoning_modes']=['off','native']
         s['quality_methods']={'structured':'exact_json','code':'optional_local_docker_sandbox',
                               'grounding':'reference_heuristic','open_ended':'human_review'}
@@ -133,9 +135,10 @@ def toggle(body:dict):
         native=int(section.get('ctx-size',0))
         if native<=0:raise RuntimeError('No native context configured')
         original=preset.read_bytes()
-        backup=preset.with_name(preset.name+'.mtp-lab-manual-'+__import__('datetime').datetime.now().strftime('%Y%m%d-%H%M%S-%f'))
-        backup.write_bytes(original)
+        backup=preset.with_name(preset.name+'.mtp-lab-manual-'+datetime.now().strftime('%Y%m%d-%H%M%S-%f'))
+        bench.ms.atomic_write(backup,original)
         bench.apply_phase(sup,preset,original,model,enabled,native)
+        bench.ms.prune_backups(preset.parent,preset.name+'.mtp-lab-manual-*')
     except Exception as exc:raise HTTPException(409,str(exc))
     return {'ok':True,'enabled':enabled,'persistence':'session-only',
             'message':'Current Hermes preset changed. It may reset on next native planner restart; backup saved.'}
@@ -154,7 +157,7 @@ def recover():
         backup=Path(info['backup'])
         if not backup.is_file():raise RuntimeError('Original preset backup file is missing')
         original=backup.read_bytes()
-        if __import__('hashlib').sha256(original).hexdigest()!=info.get('sha256'):
+        if hashlib.sha256(original).hexdigest()!=info.get('sha256'):
             raise RuntimeError('Original preset backup SHA-256 mismatch')
         preset=Path(sup.preset_path)
         bench.restore_presets(sup,preset,original)

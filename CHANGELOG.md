@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.5.2 — Robustness hardening (atomic backups, adaptive timeouts, housekeeping)
+
+- All automatic backups (preset phase backups, companion-config backups and manual-toggle backups) are now written atomically: a crash mid-write can no longer leave a truncated backup that blocks SHA-256-verified recovery.
+- Per-request HTTP timeouts are now derived from the warm-up probe's measured per-token latency (bounded to 480–7200 s) instead of the previous fixed `max(480, 0.9·max_tokens)` policy. Heavily CPU-offloaded models that legitimately need minutes per request are no longer killed mid-run; `protocol.json` records the new `request_timeout_policy`.
+- Phase preset writes preserve a native UTF-8 BOM byte-for-byte while a benchmark phase is active, so temporary presets never differ from Hermes' own encoding convention.
+- Missing bundled benchmark image: the run now fails fast with a clear reinstall instruction before any request, and report generation degrades gracefully (recorded warning in `summary.md`/`protocol.json`) instead of destroying an otherwise complete report.
+- Candidate discovery (`mmproj`, MTP-head) is cached per folder fingerprint so the 1.5-second status poll no longer rescans and re-stats every GGUF on slow or network drives; the cache invalidates automatically when the folder changes.
+- Old automatic backups are pruned to the newest five per pattern (preset, companion-config, manual-toggle), preventing unbounded accumulation across dozens of runs.
+- Docker code-sandbox harness now reads the whole stdin payload with an explicit size cap instead of truncating at 25 000 characters, eliminating silent JSON truncation for long escaped sources.
+- Removed a duplicated `reasoning_modes` status field and inline `__import__` calls; the plugin API imports `datetime`/`hashlib` normally.
+- Version markers synchronized across `plugin.yaml`, Desktop UI, installer, docs and release tooling; new regression tests cover every fix above.
+
 ## 0.5.1 — Native GGUF picker and remembered directory
 
 - Replaced both folder-grant dialogs (`ctx.files.requestFolder`) with supported native file-open dialogs (`ctx.os.pickOpenPath`).

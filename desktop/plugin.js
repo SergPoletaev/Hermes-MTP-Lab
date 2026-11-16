@@ -5,7 +5,7 @@ import { ROUTES_AREA, SIDEBAR_NAV_AREA, PALETTE_AREA, host, usePluginI18n } from
 // stage codes and raw diagnostic details; the active UI language never changes a run.
 const ID = 'hermes-mtp-lab'
 const PREF_KEY = 'hermes-mtp-lab:language'
-const API_VERSION = '0.5.1'
+const API_VERSION = '0.5.2'
 const STRINGS = {
   ru: {
     language:'Язык', languageAuto:'Авто / Hermes', languageRu:'Русский', languageEn:'English',
@@ -205,7 +205,7 @@ function LabView({ ctx }) {
   return h('div',{style:{maxWidth:980,padding:'18px 24px',fontSize:14,color:'var(--ui-text-primary)',overflow:'auto',height:'100%'}},
     h('style',{},'@keyframes mtp-lab-scan { 0% { transform:translateX(-120%); } 50% { transform:translateX(150%); } 100% { transform:translateX(360%); } }'),
     h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:16,flexWrap:'wrap'}},
-      h('div',{},h('h2',{style:{fontSize:21,fontWeight:700,marginBottom:5}},tr('title')+' · v0.5.1'),h('p',{style:muted},tr('intro'))),
+      h('div',{},h('h2',{style:{fontSize:21,fontWeight:700,marginBottom:5}},tr('title')+' · v0.5.2'),h('p',{style:muted},tr('intro'))),
       h('label',{style:{...muted,display:'flex',alignItems:'center',gap:8},htmlFor:'mtp-lab-language'},
         tr('language'),h('select',{id:'mtp-lab-language',value:language,'aria-label':tr('language'),onChange:e=>changeLanguage(e.target.value),style:{...btn,margin:0,minWidth:145}},
           h('option',{value:'auto'},tr('languageAuto')),h('option',{value:'ru'},tr('languageRu')),h('option',{value:'en'},tr('languageEn'))))),

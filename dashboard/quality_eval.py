@@ -51,7 +51,10 @@ def structured_data(text):
 CODE_HARNESS = r'''
 import sys,json,datetime,traceback
 try:
-    obj=json.loads(sys.stdin.read(25000))
+    payload=sys.stdin.read()
+    if len(payload)>100000:
+        print(json.dumps({'error':'payload_too_large'}));sys.exit(0)
+    obj=json.loads(payload)
     namespace={}
     exec(compile(obj['code'],'<generated-merge>','exec'),namespace)
     fn=namespace['merge_intervals']

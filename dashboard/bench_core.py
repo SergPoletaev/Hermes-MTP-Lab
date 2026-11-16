@@ -85,6 +85,27 @@ def http_json(url:str,key:str,body:dict|None=None,timeout:int=480)->dict:
     if not isinstance(out,dict):raise RuntimeError('Non-object llama.cpp response')
     return out
 
+
+def request_timeout(max_tokens:int,probe:dict|None=None)->int:
+    """Per-request HTTP timeout, tolerant of heavily CPU-offloaded models.
+
+    The warm-up probe provides a conservative per-token latency estimate that
+    already includes first-load effects. Without it the previous fixed policy
+    (max(480, 0.9*max_tokens) seconds) is used. The derived value is bounded to
+    [base, 7200] so a single request can never hang the whole benchmark for good.
+    """
+    base=max(480,int(max_tokens*.9))
+    if not isinstance(probe,dict):return base
+    elapsed=probe.get('elapsed');usage=probe.get('usage') or {}
+    try:tokens=int(usage.get('completion_tokens') or 0)
+    except (TypeError,ValueError):tokens=0
+    try:elapsed=float(elapsed or 0)
+    except (TypeError,ValueError):elapsed=0.0
+    if elapsed<=0 or tokens<=0:return base
+    per_token=elapsed/tokens
+    derived=per_token*max_tokens*2+180
+    return int(max(base,min(7200,derived)))
+
 def ensure_owned_idle():
     from hermes_cli.local_runtime.bootstrap import get_supervisor
     sup=get_supervisor()
@@ -180,7 +201,10 @@ def child_metrics(child:dict,timeout:float=12)->dict:
 def apply_phase(sup,preset:Path,original:bytes,model:dict,enabled:bool,ctx:int)->None:
     if not sup.is_idle():raise RuntimeError('A Hermes model request is still running')
     text=original.decode('utf-8-sig')
-    updated=ms.benchmark_presets(text,model,enabled,ctx).encode('utf-8')
+    # Preserve a native UTF-8 BOM while the phase preset is active so the
+    # temporary file keeps Hermes' own encoding convention byte-for-byte.
+    encoding='utf-8-sig' if original.startswith(b'\xef\xbb\xbf') else 'utf-8'
+    updated=ms.benchmark_presets(text,model,enabled,ctx).encode(encoding)
     ms.atomic_write(preset,updated)
     try:sup.reload_presets()
     except Exception:
@@ -195,7 +219,8 @@ def restore_presets(sup,preset:Path,original:bytes)->None:
     sup.reload_presets()
     if preset.read_bytes()!=original:raise RuntimeError('Preset bytes differ after restoration')
 
-def route_request(sup,model_id:str,task:dict,image_b64:str|None,max_tokens:int=768,reasoning_mode:str='off')->dict:
+def route_request(sup,model_id:str,task:dict,image_b64:str|None,max_tokens:int=768,
+                  reasoning_mode:str='off',timeout:int|None=None)->dict:
     content=task['prompt']
     if task['image']:
         if not image_b64:raise RuntimeError('Benchmark image missing')
@@ -210,9 +235,10 @@ def route_request(sup,model_id:str,task:dict,image_b64:str|None,max_tokens:int=7
     if reasoning_mode=='off':
         body['chat_template_kwargs']={'enable_thinking':False}
         body['reasoning_effort']='none'
+    if timeout is None:timeout=request_timeout(max_tokens)
     tick=time.perf_counter()
     response=http_json(sup.base_url+'/chat/completions',sup.api_key,body,
-                       timeout=max(480,int(max_tokens*.9)))
+                       timeout=timeout)
     elapsed=time.perf_counter()-tick
     usage=response.get('usage') or {}
     choice=(response.get('choices') or [{}])[0]
@@ -352,18 +378,24 @@ def write_report(root:Path,rows:list[dict],notes:list[str],model:dict,restored:b
     tasks=tasks or [t for t in TASKS if any(r['task']==t['id'] for r in rows)]
     image_file=Path(__file__).resolve().parent.parent/'data'/'benchmark_scene.jpg'
     image_used=any(t.get('image') for t in tasks)
-    reference=None
-    if image_used and not image_file.is_file():
-        raise RuntimeError('Bundled benchmark image is missing; cannot create a complete report')
-    if image_used and image_file.is_file():
-        import shutil
-        dest=root/'assets'/'benchmark_scene.jpg'
-        dest.parent.mkdir(parents=True,exist_ok=True)
-        shutil.copyfile(image_file,dest)
-        reference={'path':'assets/benchmark_scene.jpg','sha256':hashlib.sha256(dest.read_bytes()).hexdigest()}
+    reference=None;image_warning=None
+    if image_used:
+        if image_file.is_file():
+            import shutil
+            dest=root/'assets'/'benchmark_scene.jpg'
+            dest.parent.mkdir(parents=True,exist_ok=True)
+            shutil.copyfile(image_file,dest)
+            reference={'path':'assets/benchmark_scene.jpg','sha256':hashlib.sha256(dest.read_bytes()).hexdigest()}
+        else:
+            # Degrade gracefully: a missing bundled image must not destroy an
+            # otherwise complete report; the gap is recorded explicitly instead.
+            image_warning=('Bundled benchmark image missing from the plugin data folder; '
+                           'reference copy was NOT exported into this report.')
     protocol={'schema':'hermes-mtp-lab-protocol.v1','reasoning_mode':reasoning_mode,
               'request_contract':REQUEST_CONTRACT,'fixed_token_caps':True,
               'adaptive_retries':False,'context':ctx,'reference_image':reference,
+              'reference_image_warning':image_warning,
+              'request_timeout_policy':'warmup_derived_bounded_480_7200',
               'tasks':[{'id':t['id'],'group':t['group'],'title':t['title'],
                         'image':t['image'],'prompt':t['prompt'],
                         'max_tokens':token_budget(t,ctx)} for t in tasks]}
@@ -401,6 +433,7 @@ def write_report(root:Path,rows:list[dict],notes:list[str],model:dict,restored:b
     lines+=['','Visible-content differences indicate a change in decoding trajectory, not necessarily a regression.',
             'For code, execution occurs only in a local, pre-cached restricted Docker sandbox. If absent, quality is UNVERIFIED, never PASS.',
             'Reference JSON and image label/colour checks are narrow automated tests. Natural-language answers require manual review.',
+            *( [image_warning] if image_warning else [] ),
             'A `valid` timing row is NOT a claim of correct content. `incomplete` means token cap prevented grading.',
             'Fixed caps, no adaptive resends. `reasoning_content` may still be produced if the model template ignores disable hints.',
             '', '## Files',
@@ -500,7 +533,7 @@ def _run(model_id:str,trials:int,reasoning_mode:str='off'):
         marker=Path(assets_dir())/'.mtp-lab-pending.json'
         if marker.exists():raise RuntimeError('Unresolved prior benchmark marker; restore before testing')
         backup=preset.with_name(preset.name+'.mtp-lab-backup-'+datetime.now().strftime('%Y%m%d-%H%M%S-%f'))
-        backup.write_bytes(original)
+        ms.atomic_write(backup,original)
         ms.atomic_write(marker,json.dumps({'schema':2,'model':model_id,
                                            'original':'draft-mtp' in [x.strip() for x in section.get('spec-type','').split(',')],
                                            'backup':str(backup),
@@ -509,6 +542,9 @@ def _run(model_id:str,trials:int,reasoning_mode:str='off'):
         img64=None
         if model['has_mmproj']:
             img=Path(__file__).resolve().parent.parent/'data'/'benchmark_scene.jpg'
+            if not img.is_file():
+                raise RuntimeError('Bundled benchmark image is missing from the plugin data folder: '
+                                   +str(img)+'. Reinstall the plugin; vision tasks cannot run without it.')
             img64=base64.b64encode(img.read_bytes()).decode('ascii')
         notes.append('Original selected preset backed up; model companion manifest unchanged.')
         notes.append('Balanced cycle ordering; two replicas per phase. No third-party model, GPU or chat settings changed.')
@@ -560,7 +596,9 @@ def _run(model_id:str,trials:int,reasoning_mode:str='off'):
                                     phase=phase,current_task=task['title'],current_group=task['group'],
                                     trial=trial+1,replica=replica,live_port=child['port'],
                                     live_baseline=before.get('tokens'),live_token_limit=limit)
-                        res=route_request(sup,model_id,task,img64,max_tokens=limit,reasoning_mode=reasoning_mode)
+                        res=route_request(sup,model_id,task,img64,max_tokens=limit,
+                                           reasoning_mode=reasoning_mode,
+                                           timeout=request_timeout(limit,probe))
                         delta=diff_metrics(before,child_metrics(child))
                         attempts=1
                         elapsed_total=res['elapsed']
@@ -623,6 +661,9 @@ def _run(model_id:str,trials:int,reasoning_mode:str='off'):
                 restored=preset.read_bytes()==original
                 if restored and marker and marker.exists():marker.unlink()
                 notes.append('Restored exact original preset: '+str(restored))
+                # Housekeeping: keep only the newest preset backups on disk.
+                pruned=ms.prune_backups(preset.parent,preset.name+'.mtp-lab-backup-*')
+                if pruned:notes.append('Pruned '+str(len(pruned))+' old preset backup(s).')
             except Exception as exc:
                 notes.append('RESTORE FAILED: '+str(exc))
                 STATE.update(error=(STATE.read().get('error') or '')+'; RESTORE FAILED: '+str(exc))

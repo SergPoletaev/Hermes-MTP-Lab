@@ -5,7 +5,7 @@ from pathlib import Path
 import re
 import sys
 ROOT = Path(__file__).resolve().parents[1]
-VERSION = '0.5.1'
+VERSION = '0.5.2'
 EXPECT = [
     '.gitignore', '.gitattributes', '.github/workflows/ci.yml', 'README.md', 'docs/assets/mtp-lab-dashboard.png',
     'LICENSE', 'SECURITY.md', 'CONTRIBUTING.md', 'CHANGELOG.md',
@@ -21,6 +21,7 @@ EXPECT = [
     'tests/test_full_mock.py',
     'tests/test_progress_status.py', 'tests/test_repo_layout.py',
     'tests/test_repo_completeness.py', 'tests/test_v050_reports.py',
+    'tests/test_v052_fixes.py',
     'docs/ARCHITECTURE.md', 'docs/BENCHMARK_METHODOLOGY.md',
     'docs/EXAMPLE_RESULTS_2026-11-15.md',
     'tools/verify_repo.py', 'tools/package_release.py', 'tools/check_dist.py'
@@ -80,7 +81,7 @@ def check():
     screen=ROOT/'docs/assets/mtp-lab-dashboard.png'
     if not screen.exists() or screen.read_bytes()[:8]!=b'\x89PNG\r\n\x1a\n':problems.append('Dashboard screenshot missing or not PNG')
     js=(ROOT/'desktop/plugin.js').read_text(encoding='utf-8')
-    for required in ('usePluginI18n','ctx.i18n.register(STRINGS)',"const PREF_KEY", 'languageAuto:', 'languageEn:', 'languageRu:', 'v0.5.1'):
+    for required in ('usePluginI18n','ctx.i18n.register(STRINGS)',"const PREF_KEY", 'languageAuto:', 'languageEn:', 'languageRu:', 'v0.5.2'):
         if required not in js:problems.append('UI translation/persistence check failed: '+required)
     if 'ctx.files.requestFolder(' in js or 'browseCompanionFolder' in js:
         problems.append('Legacy folder grant picker must not be used for GGUF files')
