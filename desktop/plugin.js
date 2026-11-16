@@ -5,7 +5,7 @@ import { ROUTES_AREA, SIDEBAR_NAV_AREA, PALETTE_AREA, host, usePluginI18n } from
 // stage codes and raw diagnostic details; the active UI language never changes a run.
 const ID = 'hermes-mtp-lab'
 const PREF_KEY = 'hermes-mtp-lab:language'
-const API_VERSION = '0.5.0'
+const API_VERSION = '0.5.1'
 const STRINGS = {
   ru: {
     language:'Язык', languageAuto:'Авто / Hermes', languageRu:'Русский', languageEn:'English',
@@ -21,7 +21,7 @@ const STRINGS = {
     modesNotice:'Реальные режимы чата Hermes: Auto, Native, Text. Этот бенчмарк НЕ переключает их: категории обозначают типы нагрузок llama.cpp, а не режимы интерфейса.',
     result:'Результаты', workload:'Нагрузка', offSpeed:'OFF ток/с', onSpeed:'ON ток/с', speedup:'Ускорение', accepted:'MTP принято', comparable:'Параметры OFF/ON совпадают', yes:'да', no:'нет / неизвестно', comparableWarning:'Это наблюдаемое ускорение: некоторые параметры OFF/ON различаются либо не подтверждены. Подробности — в summary.md.', reports:'Отчёты', parityHeading:'Проверка совпадения ответов', parityPair:'Пара', parityVisible:'Совпал видимый текст', parityReasoning:'Совпал reasoning', parityNote:'Несовпадение ответа — диагностический сигнал, а не автоматический провал качества. Полные тексты и оценки — в answers.jsonl и comparisons.json.', qualityHeading:'Проверка качества', hardwareHeading:'Аппаратная диагностика', hardwareNote:'VRAM глобальная по GPU, а не память модели. Фактическое число слоёв на GPU неизвестно без логов загрузки движка.', gpuLayersArg:'Флаг GPU layers', engineVersion:'Версия llama.cpp', qualityNote:'PASS только для проверяемых задач; код запускается исключительно в доступном локальном Docker-песочнике. Без него UNVERIFIED. Творческие и технические тексты требуют ручной оценки.', qualityPass:'Подтверждено', qualityFail:'Не прошло', qualityUnverified:'Не проверено', qualityManual:'Ручная оценка', qualityIncomplete:'Обрезано лимитом', restored:'Исходный MTP восстановлен', restoreCheck:'НЕТ — проверьте журнал и резервную копию', error:'Ошибка',
     stage_idle:'Готов к тестированию', stage_checking:'Проверка окружения', stage_switch:'Переключение MTP и запуск сервера', stage_loading:'Загрузка модели и выделение памяти', stage_warmup:'Прогрев модели', stage_preparing:'Подготовка запроса', stage_request:'Обработка запроса и генерация', stage_restore:'Восстановление настроек', stage_report:'Создание отчётов', stage_finished:'Тест завершён', stage_error:'Тест завершился с ошибкой', stage_cancelled:'Тест остановлен',
-    chooseModel:'Модель Hermes', noModel:'— выбери модель —', support:'MTP-совместимость',supported:'Поддержка обнаружена', unsupported:'Нет подтверждённой MTP-конфигурации', embeddedReady:'MTP встроен в GGUF — отдельная MTP-head не требуется', embeddedPreset:'MTP настроена в пресете Hermes; встроенные слои не подтверждены по метаданным GGUF', externalHead:'Внешняя MTP-head привязана (совместимость проверяется тестом)', mtpUnknown:'MTP не обнаружена — необходима совместимая MTP-head', headCandidates:'Найденные MTP-head', headBind:'Привязать выбранную MTP-head', headNone:'В папке MTP-head не найдена — выбери другую папку', missingHead:'Привязанная MTP-head отсутствует или недоступна', scanFolder:'Поиск рядом с GGUF из пресета Hermes', versionMismatch:'Интерфейс MTP Lab обновлён, но Python API Hermes использует старую версию. Полностью закрой Hermes, включая трей, и запусти заново. Обновление Desktop-плагина само по себе не перезапускает backend.', candidates:'Найденные mmproj', recommended:'Рекомендован по имени файла — проверь совместимость', maybeCompatible:'Возможный вариант — совместимость не подтверждена', bindProjector:'Привязать выбранный mmproj', browseFolder:'Обзор папки…', noCandidates:'В папке модели mmproj не найден — выбери другую папку', folderError:'Не удалось прочитать выбранную папку', compatibilityNote:'Совпадение имени не гарантирует совместимость; выбор требует подтверждения', projectorSaved:'Компаньон сохранён; проверь, что Hermes применил его после перезапуска', headLabel:'MTP-head GGUF (пусто для встроенной MTP)', projLabel:'mmproj GGUF (необязательно)', saveCompanions:'Сохранить связь компаньонов', configHint:'Плагин ищет mmproj и MTP-head рядом с моделью. Кнопки обзора позволяют выбрать другую папку. Компаньоны подключаются только после подтверждения. После установки нового плагина полностью перезапусти Hermes, чтобы загрузился Python API.', textOnly:'Только текстовые задания (mmproj отсутствует)', imageEnabled:'Визуальные задания включены', sessionOnly:'Ручное переключение действует в текущем сеансе; для постоянной настройки используй штатные настройки модели Hermes.', group_text:'Текст', group_code:'Код и данные', group_scene:'Описание изображения', group_ground:'Распознавание деталей', open:'Открыть MTP Lab'
+    chooseModel:'Модель Hermes', noModel:'— выбери модель —', support:'MTP-совместимость',supported:'Поддержка обнаружена', unsupported:'Нет подтверждённой MTP-конфигурации', embeddedReady:'MTP встроен в GGUF — отдельная MTP-head не требуется', embeddedPreset:'MTP настроена в пресете Hermes; встроенные слои не подтверждены по метаданным GGUF', externalHead:'Внешняя MTP-head привязана (совместимость проверяется тестом)', mtpUnknown:'MTP не обнаружена — необходима совместимая MTP-head', headCandidates:'Найденные MTP-head', headBind:'Привязать выбранную MTP-head', headNone:'Рядом с моделью MTP-head не найдена — укажи файл через «Обзор…»', missingHead:'Привязанная MTP-head отсутствует или недоступна', scanFolder:'Поиск рядом с GGUF из пресета Hermes', versionMismatch:'Интерфейс MTP Lab обновлён, но Python API Hermes использует старую версию. Полностью закрой Hermes, включая трей, и запусти заново. Обновление Desktop-плагина само по себе не перезапускает backend.', candidates:'Найденные mmproj', recommended:'Рекомендован по имени файла — проверь совместимость', maybeCompatible:'Возможный вариант — совместимость не подтверждена', bindProjector:'Привязать выбранный mmproj', browseFile:'Обзор…', filePickerUnavailable:'Текущая версия Hermes Desktop не поддерживает системный диалог открытия файла (ctx.os.pickOpenPath). Обнови Hermes Desktop; папку запрашивать не будем.', invalidFile:'Нужно выбрать файл GGUF (.gguf)', selectedFile:'Файл выбран. Для применения нажми «Сохранить связь компаньонов».', pickHead:'Выбрать файл MTP-head GGUF', pickProjector:'Выбрать файл mmproj GGUF', noCandidates:'Рядом с моделью mmproj не найден — укажи файл через «Обзор…»', folderError:'Не удалось прочитать выбранную папку', compatibilityNote:'Совпадение имени не гарантирует совместимость; выбор требует подтверждения', projectorSaved:'Компаньон сохранён; проверь, что Hermes применил его после перезапуска', headLabel:'MTP-head GGUF (пусто для встроенной MTP)', projLabel:'mmproj GGUF (необязательно)', saveCompanions:'Сохранить связь компаньонов', configHint:'Плагин ищет mmproj и MTP-head рядом с моделью. Кнопки «Обзор…» позволяют выбрать конкретный GGUF-файл; диалог запоминает последнюю папку. Компаньоны подключаются только после подтверждения. После установки нового плагина полностью перезапусти Hermes, чтобы загрузился Python API.', textOnly:'Только текстовые задания (mmproj отсутствует)', imageEnabled:'Визуальные задания включены', sessionOnly:'Ручное переключение действует в текущем сеансе; для постоянной настройки используй штатные настройки модели Hermes.', group_text:'Текст', group_code:'Код и данные', group_scene:'Описание изображения', group_ground:'Распознавание деталей', open:'Открыть MTP Lab'
   },
   en: {
     language:'Language', languageAuto:'Auto / Hermes', languageRu:'Русский', languageEn:'English',
@@ -37,7 +37,7 @@ const STRINGS = {
     modesNotice:'Hermes chat modes are Auto, Native and Text. This benchmark does NOT switch among them; groups represent llama.cpp workload types, not chat UI modes.',
     result:'Results', workload:'Workload', offSpeed:'OFF tok/s', onSpeed:'ON tok/s', speedup:'Speedup', accepted:'MTP accepted', comparable:'OFF/ON parameters identical', yes:'yes', no:'no / unknown', comparableWarning:'Speedup is observational: some OFF/ON parameters differ or could not be verified. Details are in summary.md.', reports:'Reports', parityHeading:'Output reproducibility', parityPair:'Pair', parityVisible:'Visible matches', parityReasoning:'Reasoning matches', parityNote:'A mismatch is a diagnostic signal, not an automatic quality failure. Full texts and checks are in answers.jsonl and comparisons.json.', qualityHeading:'Quality assessment', hardwareHeading:'Hardware diagnostics', hardwareNote:'GPU VRAM shown is system-wide, not per-model. Actual number of GPU-offloaded layers is unknown without engine load logs.', gpuLayersArg:'GPU layers launch flag', engineVersion:'llama.cpp build', qualityNote:'PASS only for reference-checkable tasks; generated code runs only inside a locally cached Docker sandbox. Without it quality stays UNVERIFIED. Open-ended answers need human review.', qualityPass:'Verified', qualityFail:'Failed', qualityUnverified:'Unverified', qualityManual:'Manual review', qualityIncomplete:'Token-limited', restored:'Original MTP restored', restoreCheck:'NO — check the log and backup', error:'Error',
     stage_idle:'Ready to benchmark', stage_checking:'Checking environment', stage_switch:'Switching MTP and starting server', stage_loading:'Loading model and allocating memory', stage_warmup:'Warming up model', stage_preparing:'Preparing request', stage_request:'Processing request and generating answer', stage_restore:'Restoring original settings', stage_report:'Writing reports', stage_finished:'Benchmark completed', stage_error:'Benchmark failed', stage_cancelled:'Benchmark stopped',
-    chooseModel:'Hermes model', noModel:'— select a model —',support:'MTP compatibility',supported:'Support detected',unsupported:'No confirmed MTP configuration',embeddedReady:'MTP embedded in GGUF — separate MTP head not required',embeddedPreset:'MTP configured in Hermes preset; embedded layers not confirmed by GGUF metadata',externalHead:'External MTP head linked (test required to verify)',mtpUnknown:'MTP not detected — compatible MTP head required',headCandidates:'Discovered MTP-head files', headBind:'Link selected MTP head', headNone:'No MTP-head files found — browse another folder', missingHead:'Linked MTP head is missing or not accessible', scanFolder:'Scanning GGUF folder from Hermes preset', versionMismatch:'MTP Lab Desktop has updated but Hermes Python API is still the previous version. Quit Hermes completely, including the tray, and reopen it. Updating the Desktop plugin does not restart the backend.', candidates:'Discovered mmproj files',recommended:'Best filename match — verify compatibility',maybeCompatible:'Possible match — compatibility not confirmed',bindProjector:'Link selected mmproj',browseFolder:'Browse folder…',noCandidates:'No mmproj found next to the model — choose another folder',folderError:'Could not read selected folder',compatibilityNote:'Name matching does not establish compatibility; confirm the selection',projectorSaved:'Companion saved; verify Hermes has loaded it after restart',headLabel:'MTP head GGUF (empty for embedded MTP)',projLabel:'mmproj GGUF (optional)',saveCompanions:'Save companion links',configHint:'Find nearby mmproj and MTP-head files or browse another folder. Companion links are saved only on confirmation. Fully restart Hermes after installing a plugin update so the Python API reloads.',textOnly:'Text-only tasks (no mmproj)',imageEnabled:'Vision tasks enabled',sessionOnly:'Manual toggles affect the current session; use native Hermes model settings for persistent changes.', group_text:'Text', group_code:'Code and data', group_scene:'Image description', group_ground:'Visual details', open:'Open MTP Lab'
+    chooseModel:'Hermes model', noModel:'— select a model —',support:'MTP compatibility',supported:'Support detected',unsupported:'No confirmed MTP configuration',embeddedReady:'MTP embedded in GGUF — separate MTP head not required',embeddedPreset:'MTP configured in Hermes preset; embedded layers not confirmed by GGUF metadata',externalHead:'External MTP head linked (test required to verify)',mtpUnknown:'MTP not detected — compatible MTP head required',headCandidates:'Discovered MTP-head files', headBind:'Link selected MTP head', headNone:'No MTP-head found next to the model — select a GGUF with Browse', missingHead:'Linked MTP head is missing or not accessible', scanFolder:'Scanning GGUF folder from Hermes preset', versionMismatch:'MTP Lab Desktop has updated but Hermes Python API is still the previous version. Quit Hermes completely, including the tray, and reopen it. Updating the Desktop plugin does not restart the backend.', candidates:'Discovered mmproj files',recommended:'Best filename match — verify compatibility',maybeCompatible:'Possible match — compatibility not confirmed',bindProjector:'Link selected mmproj',browseFile:'Browse…', filePickerUnavailable:'This Hermes Desktop build does not expose the native open-file dialog (ctx.os.pickOpenPath). Update Hermes Desktop; folder access will not be requested.', invalidFile:'Choose a GGUF (.gguf) file', selectedFile:'File selected. Click Save companion links to apply it.', pickHead:'Select an MTP-head GGUF file', pickProjector:'Select an mmproj GGUF file',noCandidates:'No mmproj found next to the model — select a GGUF with Browse',folderError:'Could not read selected folder',compatibilityNote:'Name matching does not establish compatibility; confirm the selection',projectorSaved:'Companion saved; verify Hermes has loaded it after restart',headLabel:'MTP head GGUF (empty for embedded MTP)',projLabel:'mmproj GGUF (optional)',saveCompanions:'Save companion links',configHint:'Find nearby mmproj and MTP-head files or choose a GGUF file using Browse. The last folder is remembered. Companion links are saved only on confirmation. Fully restart Hermes after installing a plugin update so the Python API reloads.',textOnly:'Text-only tasks (no mmproj)',imageEnabled:'Vision tasks enabled',sessionOnly:'Manual toggles affect the current session; use native Hermes model settings for persistent changes.', group_text:'Text', group_code:'Code and data', group_scene:'Image description', group_ground:'Visual details', open:'Open MTP Lab'
   }
 }
 const GROUPS = {
@@ -55,6 +55,26 @@ function storedLanguage() {
 }
 function saveLanguage(language) {
   try { localStorage.setItem(PREF_KEY, language) } catch { /* blocked storage: still works for this session */ }
+}
+const LAST_BROWSE_DIR = 'companionPickerLastDirectory'
+// The OS picker returns a full local path. Keep the previous successful directory
+// across restarts, regardless of whether the user chose MTP-head or mmproj.
+function directoryOf(path) {
+  if (typeof path !== 'string') return ''
+  const value = path.trim()
+  const at = Math.max(value.lastIndexOf('\\'),value.lastIndexOf('/'))
+  return at >= 0 ? value.slice(0,at) : ''
+}
+function pickerStartDir(ctx, selectedPath, modelPath) {
+  let remembered = ''
+  try { remembered = ctx.storage?.get(LAST_BROWSE_DIR, '') || '' } catch { /* older shell */ }
+  return remembered || directoryOf(modelPath) || directoryOf(selectedPath) || undefined
+}
+function rememberPickerDirectory(ctx, path) {
+  const directory = directoryOf(path)
+  if (directory) {
+    try { ctx.storage?.set(LAST_BROWSE_DIR,directory) } catch { /* selection remains usable */ }
+  }
 }
 const h = React.createElement
 const block = { padding:'14px', border:'1px solid var(--ui-stroke-secondary)', borderRadius:10, marginBottom:12 }
@@ -86,6 +106,7 @@ function LabView({ ctx }) {
   const [reasoningMode,setReasoningMode] = useState('off')
   const [headOptions,setHeadOptions] = useState([])
   const [headChoice,setHeadChoice] = useState('')
+  const [fileNotice,setFileNotice] = useState('')
   // ChatVault also uses the Hermes SDK locale, with an explicit local override.
   const sdkT = usePluginI18n(ID)
   const tr=(key,...args)=>{
@@ -116,13 +137,13 @@ function LabView({ ctx }) {
     setBusy(true);setError('')
     try{
       await ctx.rest(path,{method:'POST',body,timeoutMs:30000})
-      if(path==='/configure'){setHead(body.mtp_head||'');setProj(body.mmproj||'')}
+      if(path==='/configure'){setHead(body.mtp_head||'');setProj(body.mmproj||'');setFileNotice('')}
       await load()
     }
     catch(e){setError(String(e.message||e))}
     finally{setBusy(false)}
   }
-  useEffect(()=>{setHead(state?.selected?.mtp_head||'');setProj(state?.selected?.mmproj||'')},[state?.model])
+  useEffect(()=>{setHead(state?.selected?.mtp_head||'');setProj(state?.selected?.mmproj||'');setFileNotice('')},[state?.model])
   // Projector and head candidates arrive with /status, which exists in every
   // supported backend. No extra /projectors endpoint that an old gateway 404s.
   const apiReady = state?.api_version === API_VERSION
@@ -135,28 +156,34 @@ function LabView({ ctx }) {
     setHeadChoice('')
     setProjectorNotice('')
   },[state?.model,state?.api_version])
-  async function browseCompanionFolder(kind){
-    if(!ctx.files?.requestFolder||!ctx.files?.list){setError(tr('folderError'));return}
+  async function browseCompanionFile(kind){
+    // A GGUF path is required by the Hermes backend, not a folder capability.
+    // pickOpenPath returns a native absolute path and supports defaultPath.
+    // Do not use requestFolder(): it displays a misleading permission grant.
+    if(typeof ctx.os?.pickOpenPath!=='function'){
+      setError(tr('filePickerUnavailable'));return
+    }
     setBusy(true);setError('')
-    try{
-      const picked=await ctx.files.requestFolder()
-      if(!picked?.ok||!picked.folder)return
-      const listing=await ctx.files.list(picked.folder.id,'')
-      if(!listing?.ok)throw new Error(listing?.message||tr('folderError'))
-      const folderPath=picked.folder.path||''
-      if(!folderPath)throw new Error(tr('folderError'))
-      const slash=folderPath.includes('\\')?'\\':'/'
-      const prefix=folderPath.replace(/[\\/]+$/,'')+slash
-      const filter=kind==='head'?/(?:^|[-_.])(?:mtp|draft|nextn)(?:[-_.]|$)/i:/mmproj/i
-      const found=(listing.entries||[]).filter(e=>!e.isDirectory&&/\.gguf$/i.test(e.name)
-        &&filter.test(e.name)&& (kind==='projector'||!/mmproj/i.test(e.name)))
-        .slice(0,30).map(e=>({path:prefix+e.name,name:e.name,recommendation:'possible',score:0}))
-      if(kind==='head'){
-        setHeadOptions(found);setHeadChoice(found.length===1?found[0].path:'')
-      }else{
-        setProjectors(found);setProjectorChoice(found.length===1?found[0].path:'')
-        setProjectorNotice(found.length?'':tr('noCandidates'))
+    try {
+      const current=kind==='head'?head:proj
+      const defaultPath=pickerStartDir(ctx,current,state?.selected?.model_path)
+      const selected=await ctx.os.pickOpenPath({
+        title:tr(kind==='head'?'pickHead':'pickProjector'),
+        ...(defaultPath?{defaultPath}:{}),
+        filters:[{name:'GGUF',extensions:['gguf']}]
+      })
+      // A cancel (null/empty) never clears an existing selection.
+      if(!selected)return
+      if(typeof selected!=='string'||!selected.toLowerCase().endsWith('.gguf')||!directoryOf(selected)){
+        throw new Error(tr('invalidFile'))
       }
+      rememberPickerDirectory(ctx,selected)
+      if(kind==='head'){
+        setHead(selected);setHeadChoice('')
+      }else{
+        setProj(selected);setProjectorChoice('');setProjectorNotice('')
+      }
+      setFileNotice(tr('selectedFile'))
     }catch(e){setError(String(e.message||e))}
     finally{setBusy(false)}
   }
@@ -178,7 +205,7 @@ function LabView({ ctx }) {
   return h('div',{style:{maxWidth:980,padding:'18px 24px',fontSize:14,color:'var(--ui-text-primary)',overflow:'auto',height:'100%'}},
     h('style',{},'@keyframes mtp-lab-scan { 0% { transform:translateX(-120%); } 50% { transform:translateX(150%); } 100% { transform:translateX(360%); } }'),
     h('div',{style:{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:16,flexWrap:'wrap'}},
-      h('div',{},h('h2',{style:{fontSize:21,fontWeight:700,marginBottom:5}},tr('title')+' · v0.5.0'),h('p',{style:muted},tr('intro'))),
+      h('div',{},h('h2',{style:{fontSize:21,fontWeight:700,marginBottom:5}},tr('title')+' · v0.5.1'),h('p',{style:muted},tr('intro'))),
       h('label',{style:{...muted,display:'flex',alignItems:'center',gap:8},htmlFor:'mtp-lab-language'},
         tr('language'),h('select',{id:'mtp-lab-language',value:language,'aria-label':tr('language'),onChange:e=>changeLanguage(e.target.value),style:{...btn,margin:0,minWidth:145}},
           h('option',{value:'auto'},tr('languageAuto')),h('option',{value:'ru'},tr('languageRu')),h('option',{value:'en'},tr('languageEn'))))),
@@ -202,10 +229,11 @@ function LabView({ ctx }) {
       state?.selected?.model_path?h('p',{style:muted},tr('scanFolder')+': '+state.selected.model_path.replace(/[\\/][^\\/]+$/,'')):null,
       h('p',{style:muted},tr('configHint')),
       h('label',{style:{...muted,display:'block'}},tr('headLabel')),
-      h('input',{value:head,onChange:e=>setHead(e.target.value),disabled:busy||running||!state?.model,style:{...btn,width:'98%',maxWidth:800}}),
+      h('div',{style:{display:'flex',gap:6,alignItems:'center',maxWidth:800,flexWrap:'wrap'}},
+        h('input',{value:head,onChange:e=>{setHead(e.target.value);setFileNotice('')},disabled:busy||running||!state?.model,style:{...btn,marginRight:0,flex:'1 1 320px',minWidth:180}}),
+        h('button',{style:{...btn,marginRight:0},disabled:busy||running||!apiReady||!state?.model,onClick:()=>browseCompanionFile('head')},tr('browseFile'))),
       h('div',{style:{display:'flex',alignItems:'center',flexWrap:'wrap',gap:6,marginTop:5}},
-        h('span',{style:{...muted,fontWeight:650}},tr('headCandidates')),
-        h('button',{style:{...btn,marginTop:0},disabled:busy||running||!apiReady||!state?.model,onClick:()=>browseCompanionFolder('head')},tr('browseFolder'))),
+        h('span',{style:{...muted,fontWeight:650}},tr('headCandidates'))),
       headOptions.length?h('div',{},
         h('select',{value:headChoice,disabled:busy||running,onChange:e=>setHeadChoice(e.target.value),style:{...btn,width:'71%',maxWidth:680},'aria-label':tr('headCandidates')},
           h('option',{value:''},'—'),...headOptions.map(c=>h('option',{key:c.path,value:c.path},c.name+(c.recommendation==='strong'?' ★':'')))),
@@ -214,8 +242,7 @@ function LabView({ ctx }) {
         h('p',{style:muted},tr('headNone')),
 
       h('div',{style:{display:'flex',alignItems:'center',flexWrap:'wrap',gap:6,marginTop:5}},
-        h('span',{style:{...muted,fontWeight:650}},tr('candidates')),
-        h('button',{style:{...btn,marginTop:0},disabled:busy||running||!apiReady||!state?.model,onClick:()=>browseCompanionFolder('projector')},tr('browseFolder'))),
+        h('span',{style:{...muted,fontWeight:650}},tr('candidates'))),
       projectors.length?h('div',{},
         h('select',{value:projectorChoice,disabled:busy||running,onChange:e=>setProjectorChoice(e.target.value),style:{...btn,width:'71%',maxWidth:680},'aria-label':tr('candidates')},
           h('option',{value:''},'—'),...projectors.map(c=>h('option',{key:c.path,value:c.path},c.name+(c.recommendation==='strong'?' ★':'')))),
@@ -224,7 +251,10 @@ function LabView({ ctx }) {
         h('p',{style:muted},tr('compatibilityNote'))):
         h('p',{style:muted},projectorNotice||tr('noCandidates')),
       h('label',{style:{...muted,display:'block'}},tr('projLabel')),
-      h('input',{value:proj,onChange:e=>setProj(e.target.value),disabled:busy||running||!state?.model,style:{...btn,width:'98%',maxWidth:800}}),
+      h('div',{style:{display:'flex',gap:6,alignItems:'center',maxWidth:800,flexWrap:'wrap'}},
+        h('input',{value:proj,onChange:e=>{setProj(e.target.value);setFileNotice('')},disabled:busy||running||!state?.model,style:{...btn,marginRight:0,flex:'1 1 320px',minWidth:180}}),
+        h('button',{style:{...btn,marginRight:0},disabled:busy||running||!apiReady||!state?.model,onClick:()=>browseCompanionFile('projector')},tr('browseFile'))),
+      fileNotice?h('p',{style:{...muted,color:'var(--ui-accent)'}},fileNotice):null,
       h('button',{style:btn,disabled:busy||running||!apiReady||!state?.owns_router||!state?.model,
         onClick:()=>act('/configure',{mtp_head:head,mmproj:proj})},tr('saveCompanions'))),
     h('section',{style:block},h('div',{style:{fontWeight:650,marginBottom:6}},tr('control')),

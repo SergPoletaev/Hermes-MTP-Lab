@@ -11,7 +11,7 @@ except ImportError:
     spec=importlib.util.spec_from_file_location('hermes_mtp_lab_bench_core',file)
     bench=importlib.util.module_from_spec(spec);spec.loader.exec_module(bench)
 router=APIRouter()
-API_VERSION="0.5.0"
+API_VERSION="0.5.1"
 
 def environment():
     sup,preset,comp,models=bench.get_model_environment()

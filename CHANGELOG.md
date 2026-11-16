@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.1 — Native GGUF picker and remembered directory
+
+- Replaced both folder-grant dialogs (`ctx.files.requestFolder`) with supported native file-open dialogs (`ctx.os.pickOpenPath`).
+- The MTP and mmproj fields each have an adjacent **Browse…** button restricted to GGUF. Picking a file fills its field; saving remains explicit.
+- The last successfully used directory persists per plugin via `ctx.storage`; the initial browse location defaults to the selected Hermes model directory. Cancel leaves current entries unchanged.
+- Added native picker interaction tests and aligned the installer, API, docs, README and release archives to v0.5.1.
+
 ## 0.5.0 — Fixed paired protocol, controllable reasoning and self-contained QA
 
 - Default no-thinking request via llama.cpp chat-template parameters, plus optional native reasoning. Never silently assert that a template obeyed the request.

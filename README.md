@@ -2,9 +2,9 @@
 
 # Hermes MTP Lab
 
-**v0.5.0 · Automatic MTP A/B benchmark for Hermes Desktop · MIT**
+**v0.5.1 · Automatic MTP A/B benchmark for Hermes Desktop · MIT**
 
-![Hermes MTP Lab v0.5.0 — демонстрационный рендер интерфейса, не реальный тест / UI demonstration, not live test](docs/assets/mtp-lab-dashboard.png)
+![Hermes MTP Lab v0.5.1 — демонстрационный рендер интерфейса, не реальный тест / UI demonstration, not live test](docs/assets/mtp-lab-dashboard.png)
 
 
 **Навигация / Navigation / 导航 / नेविगेशन:** [Русский](#ru) · [English](#en) · [简体中文](#zh) · [हिन्दी](#hi) · [Конец / End](#end)
@@ -28,22 +28,22 @@
 
 **Важно:** в Hermes существуют режимы чата **Auto, Native, Text**. Названия групп MTP Lab — это **типы серверной нагрузки**, а не режимы чата. Плагин проводит запросы напрямую через локальный `llama.cpp`; он **не** измеряет задержку UI, время до первого токена или полный цикл работы Auto/Native/Text. Если параметры OFF и ON нельзя подтвердить одинаковыми, ускорение считается **наблюдаемым**, а не строго приписываемым MTP.
 
-**Проверка качества v0.5.0.** Вычисления сверяются с эталонными числами; на тестовой фотографии проверяются надпись `TEST 47` и порядок цветов красный–зелёный–жёлтый. Python-код исполняется только в заранее установленном ограниченном Docker-контейнере; при его отсутствии результат честно отмечается как «не проверено» (на Windows код модели не запускается). Открытые тексты требуют ручной оценки. Запросы используют одинаковые фиксированные лимиты для OFF и ON (768–1536 токенов) без бесполезных повторных генераций; незавершённые ответы помечаются `incomplete`. Режим reasoning выбирается в интерфейсе: запрос без reasoning (по умолчанию, поддержка зависит от шаблона) или обычное мышление модели. Точные задания и эталонная фотография включены в отчёт. Собираются доступные сведения о GPU/VRAM, версии движка, аргументах offload и GGUF. Реальное число выгруженных в GPU слоёв не выдумывается, а значения общесистемной VRAM не выдаются за память одной модели. Тест может занять часы на частично выгруженных моделях.
+**Проверка качества v0.5.1.** Вычисления сверяются с эталонными числами; на тестовой фотографии проверяются надпись `TEST 47` и порядок цветов красный–зелёный–жёлтый. Python-код исполняется только в заранее установленном ограниченном Docker-контейнере; при его отсутствии результат честно отмечается как «не проверено» (на Windows код модели не запускается). Открытые тексты требуют ручной оценки. Запросы используют одинаковые фиксированные лимиты для OFF и ON (768–1536 токенов) без бесполезных повторных генераций; незавершённые ответы помечаются `incomplete`. Режим reasoning выбирается в интерфейсе: запрос без reasoning (по умолчанию, поддержка зависит от шаблона) или обычное мышление модели. Точные задания и эталонная фотография включены в отчёт. Собираются доступные сведения о GPU/VRAM, версии движка, аргументах offload и GGUF. Реальное число выгруженных в GPU слоёв не выдумывается, а значения общесистемной VRAM не выдаются за память одной модели. Тест может занять часы на частично выгруженных моделях.
 
 ### Совместимость
 
 Плагин **не привязан к архитектуре, квантизации или имени модели**. Модель выбирается из управляемых пресетов Hermes, а совместимые компаньоны `mtp_head` и `mmproj` можно указать отдельно для неё. Поддерживаются текстовые модели без mmproj, модели с отдельной MTP-head и модели со встроенным MTP, подтверждённым метаданными GGUF, или с режимом MTP, указанным в пресете Hermes. **Это не означает, что любая LLM умеет MTP:** необходимы совместимость модели, head, `llama.cpp` и доступная память. Если MTP не поддерживается ни моделью, ни привязанным компаньоном, запуск блокируется. GGUF-файлы в пакет не входят.
 
-**В текущей версии:** MTP Lab ищет `mmproj` и MTP-head рядом с выбранной моделью и предлагает варианты; для другой папки работает штатная кнопка **«Обзор папки…»** Hermes Desktop. Файл привязывается только после подтверждения. **Зелёная надпись «MTP встроен в GGUF»** выводится лишь при обнаружении соответствующих метаданных в GGUF; режим, заданный одним только пресетом Hermes, помечается как неподтверждённый. Это не гарантия ускорения — проверьте OFF/ON.
+**В текущей версии:** MTP Lab ищет `mmproj` и MTP-head рядом с выбранной моделью и предлагает варианты; для другой папки работает нативная кнопка **«Обзор…»**: выбрать конкретный `.gguf` с фильтром и повторным открытием последней использованной папки. Файл привязывается только после подтверждения. **Зелёная надпись «MTP встроен в GGUF»** выводится лишь при обнаружении соответствующих метаданных в GGUF; режим, заданный одним только пресетом Hermes, помечается как неподтверждённый. Это не гарантия ускорения — проверьте OFF/ON.
 
 ## Установка напрямую из Git (рекомендуется)
 
-Hermes Desktop → **Capabilities → Plugins → Install from Git**: вставьте **`https://github.com/SergPoletaev/Hermes-MTP-Lab.git`**. Плагин находится в корне репозитория (`plugin.yaml`, `desktop/plugin.js`), поэтому никакие `#подпапка` не нужны. Выберите компоненты и подтвердите установку; включите их при необходимости. Если версия уже установлена, подтвердите её замену только после завершения теста. **После обновления полностью закройте Hermes (включая трей) и запустите заново:** Python-маршруты подхватываются gateway при запуске. Поиск рядом с моделью использует каталог GGUF, указанный в пресете Hermes; если файл исходно лежал в другом каталоге, выберите его папку кнопкой обзора.
+Hermes Desktop → **Capabilities → Plugins → Install from Git**: вставьте **`https://github.com/SergPoletaev/Hermes-MTP-Lab.git`**. Плагин находится в корне репозитория (`plugin.yaml`, `desktop/plugin.js`), поэтому никакие `#подпапка` не нужны. Выберите компоненты и подтвердите установку; включите их при необходимости. Если версия уже установлена, подтвердите её замену только после завершения теста. **После обновления полностью закройте Hermes (включая трей) и запустите заново:** Python-маршруты подхватываются gateway при запуске. Поиск рядом с моделью использует каталог GGUF из пресета Hermes; если компаньон лежит отдельно, нажмите «Обзор…» у нужного поля и выберите сам `.gguf`-файл. Последняя использованная папка сохраняется между запусками.
 
 
 ### Установка из GitHub Release на Windows
 
-1. Скачайте **`Hermes_MTP_Lab_v0.5.0_PORTABLE_INSTALL.zip`** в [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) и **полностью распакуйте** в любую папку.
+1. Скачайте **`Hermes_MTP_Lab_v0.5.1_PORTABLE_INSTALL.zip`** в [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) и **полностью распакуйте** в любую папку.
 2. Полностью завершите Hermes Desktop, включая значок в трее.
 3. Дважды щёлкните `Install-Hermes-MTP-Lab.cmd`. Установщик копирует папку плагина, сохраняет резервную копию предыдущей версии и вызывает штатную команду `hermes plugins enable hermes-mtp-lab` для разрешения Python-бэкенда. Он не правит произвольный YAML вручную.
 4. Запустите Hermes; в **Возможности → Plugins** включите Desktop-компонент `MTP Lab`, если он отключён.
@@ -65,7 +65,7 @@ Hermes Desktop → **Capabilities → Plugins → Install from Git**: встав
 
 **Hermes MTP Lab** is an independent Hermes Desktop plugin for enabling/disabling Multi-Token Prediction (MTP) on a selected MTP-capable locally managed GGUF model and automatically benchmarking decoding throughput with MTP OFF versus ON. All prompts, an original test image, warmups and repetitions are included. Requests run through the Hermes-managed local `llama.cpp` server, not through paid cloud APIs, and do not change your conversations.
 
-**Since v0.3.3:** Adjacent-folder `mmproj` and MTP-head suggestions and the native Hermes **Browse folder…** dialog eliminate manual path typing. Pairing requires user confirmation. A **green embedded-MTP indicator** appears only when GGUF metadata confirms it; a native preset alone is labelled unverified, and neither implies a proven speedup.
+**Since v0.3.3:** `mmproj` and MTP-head candidates are detected next to the selected model. **Since v0.5.1**, each field has a native **Browse…** file chooser filtered to `.gguf`, opening the model folder initially and remembering the last selected directory thereafter. Pairing requires user confirmation. A **green embedded-MTP indicator** appears only when GGUF metadata confirms it; a native preset alone is labelled unverified, and neither implies a proven speedup.
 
 ### Features
 
@@ -79,7 +79,7 @@ Hermes Desktop → **Capabilities → Plugins → Install from Git**: встав
 
 **Scope:** Hermes chat offers **Auto, Native and Text** modes. MTP Lab workload categories are **not** these chat modes. The tests call local `llama.cpp` directly and do **not** benchmark the complete chat UX, desktop rendering or time to first token. If effective OFF/ON settings cannot be verified identical, reported speedup is *observational*, not a controlled estimate of MTP alone.
 
-**Quality checks in v0.5.0.** Calculations have fixed reference answers; the built-in image checks the `TEST 47` label and the red–green–yellow notebook order. Generated Python is executed **only** in an already cached, restricted Docker sandbox; otherwise code quality is explicitly unverified and model code never runs on the host. Open-ended responses need human review. OFF/ON pairs use the same fixed 768–1536-token limits with no redundant reruns; truncated replies are `incomplete`. Choose request-side no-thinking (default, template-dependent) or native reasoning in Desktop. Exact prompts and the vision reference image are exported. Available GPU/VRAM, engine, offload launch flags and GGUF fingerprints are recorded; system-wide GPU use is not mislabeled per-model VRAM and actual offloaded layer counts are never invented. Testing partially CPU-offloaded models may take hours.
+**Quality checks in v0.5.1.** Calculations have fixed reference answers; the built-in image checks the `TEST 47` label and the red–green–yellow notebook order. Generated Python is executed **only** in an already cached, restricted Docker sandbox; otherwise code quality is explicitly unverified and model code never runs on the host. Open-ended responses need human review. OFF/ON pairs use the same fixed 768–1536-token limits with no redundant reruns; truncated replies are `incomplete`. Choose request-side no-thinking (default, template-dependent) or native reasoning in Desktop. Exact prompts and the vision reference image are exported. Available GPU/VRAM, engine, offload launch flags and GGUF fingerprints are recorded; system-wide GPU use is not mislabeled per-model VRAM and actual offloaded layer counts are never invented. Testing partially CPU-offloaded models may take hours.
 
 ### Compatibility
 
@@ -87,12 +87,12 @@ The plugin has **no model-family, quantization or fixed-name restriction**. Sele
 
 ### Install directly from Git (recommended)
 
-In Hermes Desktop open **Capabilities → Plugins → Install from Git**, then enter **`https://github.com/SergPoletaev/Hermes-MTP-Lab.git`**. The plugin is rooted at `plugin.yaml` and `desktop/plugin.js`; no `#subfolder` suffix is needed. Select the components and confirm installation. If an earlier version is installed, complete any running benchmark before replacing it. **Quit Hermes completely (including the tray) and reopen it after the update** so the Python API routes reload. Nearby discovery uses the GGUF location from the Hermes preset; if your downloaded model or companions are stored in another folder, use the native folder picker.
+In Hermes Desktop open **Capabilities → Plugins → Install from Git**, then enter **`https://github.com/SergPoletaev/Hermes-MTP-Lab.git`**. The plugin is rooted at `plugin.yaml` and `desktop/plugin.js`; no `#subfolder` suffix is needed. Select the components and confirm installation. If an earlier version is installed, complete any running benchmark before replacing it. **Quit Hermes completely (including the tray) and reopen it after the update** so the Python API routes reload. Nearby discovery uses the GGUF location from the Hermes preset; if your downloaded model or companions are stored in another folder, use the native file picker.
 
 
 ### Windows installation from a GitHub release
 
-1. Download `Hermes_MTP_Lab_v0.5.0_PORTABLE_INSTALL.zip` from [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) and extract it fully to any folder.
+1. Download `Hermes_MTP_Lab_v0.5.1_PORTABLE_INSTALL.zip` from [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) and extract it fully to any folder.
 2. Fully **Quit Hermes**, including its tray process.
 3. Double-click `Install-Hermes-MTP-Lab.cmd`. It backs up the previous plugin, installs the package and uses the official `hermes plugins enable hermes-mtp-lab` command for the Python backend. It does not edit arbitrary YAML using text substitutions.
 4. Open Hermes → **Capabilities → Plugins** and enable the MTP Lab Desktop card if necessary.
@@ -114,7 +114,7 @@ This is an independent, unofficial community plugin for [NousResearch Hermes Age
 
 **Hermes MTP Lab** 是面向 Hermes Desktop 的独立插件，用于控制所选、支持 MTP 的本地 GGUF 模型的多令牌预测（MTP，Multi-Token Prediction），并自动比较 MTP 关闭与开启时的生成速度。测试提示词、参考图片、预热和重复测试都已经包含在安装包中。测试通过 Hermes 管理的本地 `llama.cpp` 服务器运行，不需要付费云端 API，也不会修改用户聊天记录。
 
-**v0.3.3 新增：** 自动检测模型所在文件夹内的 `mmproj` 和 MTP-head，并可通过 Hermes 原生的 **浏览文件夹** 选择其他目录，无须手动输入路径。只有用户确认后才保存关联。仅在 GGUF 元数据确认内置 MTP 时才显示绿色状态；仅预设声明的状态标记为未经确认，仍须实测加速效果。
+**v0.3.3 起：** 自动检测模型所在文件夹内的 `mmproj` 和 MTP-head。**v0.5.1 起：** 每个文件字段均可点击 **“浏览…”**，使用原生文件对话框直接选择 `.gguf`，首次打开时定位到模型文件夹，并在后续操作中记住上次选择的目录。只有用户确认后才保存关联。仅在 GGUF 元数据确认内置 MTP 时才显示绿色状态；仅预设声明的状态标记为未经确认，仍须实测加速效果。
 
 ### 主要功能
 
@@ -128,7 +128,7 @@ This is an independent, unofficial community plugin for [NousResearch Hermes Age
 
 **重要说明：** Hermes 的聊天模式是 **Auto、Native、Text**；MTP Lab 的任务分类**不是**聊天模式。测试直接访问本地 `llama.cpp`，不测量桌面界面延迟或首令牌时间。若无法确认 OFF/ON 的其他参数一致，加速结果只应视为*观察值*，不能完全归因于 MTP。
 
-**v0.5.0 质量验证。** 计算题与确定的标准答案核对；图片检查 `TEST 47` 标签和红、绿、黄笔记本顺序。生成的 Python 代码**仅在已缓存的受限 Docker 沙箱中执行**；没有此环境时标为「未验证」，绝不在主机运行模型生成的代码。开放式回答需要人工审核。OFF/ON 使用相同的固定 768–1536 token 上限，不重复生成；截断结果标为 `incomplete`。界面可选择请求关闭推理（默认，取决于模型模板）或模型原生推理，报告保存原始题目与测试图片。报告记录可用的 GPU/显存、引擎版本、卸载参数和 GGUF 指纹，不把全系统显存误报为单个模型的用量，也不推测实际 GPU 层数。CPU 卸载较多时测试可能持续数小时。
+**v0.5.1 质量验证。** 计算题与确定的标准答案核对；图片检查 `TEST 47` 标签和红、绿、黄笔记本顺序。生成的 Python 代码**仅在已缓存的受限 Docker 沙箱中执行**；没有此环境时标为「未验证」，绝不在主机运行模型生成的代码。开放式回答需要人工审核。OFF/ON 使用相同的固定 768–1536 token 上限，不重复生成；截断结果标为 `incomplete`。界面可选择请求关闭推理（默认，取决于模型模板）或模型原生推理，报告保存原始题目与测试图片。报告记录可用的 GPU/显存、引擎版本、卸载参数和 GGUF 指纹，不把全系统显存误报为单个模型的用量，也不推测实际 GPU 层数。CPU 卸载较多时测试可能持续数小时。
 
 ### 兼容性
 
@@ -141,7 +141,7 @@ This is an independent, unofficial community plugin for [NousResearch Hermes Age
 
 ### Windows 安装
 
-1. 从 [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) 下载 `Hermes_MTP_Lab_v0.5.0_PORTABLE_INSTALL.zip`，完整解压到任意文件夹。
+1. 从 [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) 下载 `Hermes_MTP_Lab_v0.5.1_PORTABLE_INSTALL.zip`，完整解压到任意文件夹。
 2. 完全退出 Hermes，包括系统托盘中的程序。
 3. 双击 `Install-Hermes-MTP-Lab.cmd`。安装程序备份旧插件，并调用 Hermes 官方命令 `hermes plugins enable hermes-mtp-lab` 启用 Python 后端，而不会直接修改 YAML 文本。
 4. 启动 Hermes，在 **Capabilities → Plugins** 中按需启用 MTP Lab Desktop 插件。
@@ -166,7 +166,7 @@ This is an independent, unofficial community plugin for [NousResearch Hermes Age
 
 **Hermes MTP Lab** Hermes Desktop के लिए एक स्वतंत्र प्लगइन है। यह चयनित MTP-संगत स्थानीय GGUF मॉडल पर Multi-Token Prediction (MTP) को चालू या बंद करता है और MTP OFF तथा ON के बीच जनरेशन की गति की स्वचालित तुलना करता है। सभी परीक्षण प्रॉम्प्ट, संदर्भ चित्र, वॉर्म-अप और पुनरावृत्तियाँ पैकेज में शामिल हैं। परीक्षण Hermes द्वारा संचालित स्थानीय `llama.cpp` सर्वर का उपयोग करते हैं; किसी सशुल्क क्लाउड API की ज़रूरत नहीं होती और मौजूदा चैट बदली नहीं जाती।
 
-**v0.3.3 में नया:** मॉडल के पास `mmproj` और MTP-head फ़ाइलों का सुझाव और Hermes का मूल **Browse folder…** चयन उपलब्ध है; पाथ टाइप करने की ज़रूरत नहीं। पुष्टि के बाद ही लिंक सहेजा जाता है। **हरा embedded MTP स्टेटस** केवल GGUF मेटाडेटा में पुष्टि होने पर दिखता है; केवल preset होने पर अपुष्ट लिखा जाएगा। वास्तविक गति A/B परीक्षण से जाँचें।
+**v0.3.3 से:** मॉडल के पास `mmproj` और MTP-head फ़ाइलों के सुझाव मिलते हैं। **v0.5.1 से:** दोनों फ़ील्ड के पास **Browse…** बटन सीधे `.gguf` फ़ाइल चुनता है; पहली बार मॉडल का फ़ोल्डर खुलता है और आगे पिछला चुना गया फ़ोल्डर याद रहता है। पुष्टि के बाद ही लिंक सहेजा जाता है। **हरा embedded MTP स्टेटस** केवल GGUF मेटाडेटा में पुष्टि होने पर दिखता है; केवल preset होने पर अपुष्ट लिखा जाएगा। वास्तविक गति A/B परीक्षण से जाँचें।
 
 ### सुविधाएँ
 
@@ -180,7 +180,7 @@ This is an independent, unofficial community plugin for [NousResearch Hermes Age
 
 **ध्यान दें:** Hermes में चैट मोड **Auto, Native और Text** हैं। MTP Lab के कार्य समूह इन मोडों के समान **नहीं** हैं। परीक्षण सीधे स्थानीय `llama.cpp` को भेजे जाते हैं और यूज़र इंटरफ़ेस का विलंब या पहले टोकन का समय नहीं मापते। यदि OFF/ON के अन्य पैरामीटर समान होने की पुष्टि न हो, तो दिखाई गई तेज़ी केवल *देखी गई गति* है, केवल MTP का प्रमाण नहीं।
 
-**v0.5.0 गुणवत्ता जाँच।** गणना के उत्तर निश्चित संदर्भ से जाँचे जाते हैं; चित्र में `TEST 47` और लाल–हरा–पीला नोटबुक क्रम जाँचा जाता है। जनरेट किया गया Python केवल **पहले से उपलब्ध, सीमित Docker सैंडबॉक्स** में चलाया जाता है; उसके बिना परिणाम 'असत्यापित' रहता है और होस्ट Windows पर कोड नहीं चलता। खुले उत्तरों की मानवीय समीक्षा आवश्यक है। OFF/ON में एक जैसी 768–1536 टोकन सीमा लागू होती है; बेकार दोहराव नहीं होता और अधूरे उत्तर `incomplete` रहते हैं। इंटरफ़ेस में reasoning बंद करने का अनुरोध (डिफ़ॉल्ट, मॉडल टेम्पलेट पर निर्भर) या मूल reasoning चुना जा सकता है। रिपोर्ट में मूल प्रश्न और परीक्षण छवि शामिल हैं। उपलब्ध GPU/VRAM, इंजन संस्करण, ऑफ़लोड फ़्लैग और GGUF विवरण रिकॉर्ड होते हैं; पूरे GPU के उपयोग को एक मॉडल की VRAM नहीं कहा जाता और वास्तविक ऑफ़लोड परतें अनुमान से नहीं जोड़ी जातीं। CPU ऑफ़लोड वाले मॉडल पर परीक्षण में कई घंटे लग सकते हैं।
+**v0.5.1 गुणवत्ता जाँच।** गणना के उत्तर निश्चित संदर्भ से जाँचे जाते हैं; चित्र में `TEST 47` और लाल–हरा–पीला नोटबुक क्रम जाँचा जाता है। जनरेट किया गया Python केवल **पहले से उपलब्ध, सीमित Docker सैंडबॉक्स** में चलाया जाता है; उसके बिना परिणाम 'असत्यापित' रहता है और होस्ट Windows पर कोड नहीं चलता। खुले उत्तरों की मानवीय समीक्षा आवश्यक है। OFF/ON में एक जैसी 768–1536 टोकन सीमा लागू होती है; बेकार दोहराव नहीं होता और अधूरे उत्तर `incomplete` रहते हैं। इंटरफ़ेस में reasoning बंद करने का अनुरोध (डिफ़ॉल्ट, मॉडल टेम्पलेट पर निर्भर) या मूल reasoning चुना जा सकता है। रिपोर्ट में मूल प्रश्न और परीक्षण छवि शामिल हैं। उपलब्ध GPU/VRAM, इंजन संस्करण, ऑफ़लोड फ़्लैग और GGUF विवरण रिकॉर्ड होते हैं; पूरे GPU के उपयोग को एक मॉडल की VRAM नहीं कहा जाता और वास्तविक ऑफ़लोड परतें अनुमान से नहीं जोड़ी जातीं। CPU ऑफ़लोड वाले मॉडल पर परीक्षण में कई घंटे लग सकते हैं।
 
 ### संगतता
 
@@ -193,7 +193,7 @@ Hermes Desktop → **Capabilities → Plugins → Install from Git** खोल�
 
 ### Windows पर स्थापना
 
-1. [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) से `Hermes_MTP_Lab_v0.5.0_PORTABLE_INSTALL.zip` डाउनलोड करके पूरा संग्रह किसी भी फ़ोल्डर में निकालें।
+1. [Releases](https://github.com/SergPoletaev/Hermes-MTP-Lab/releases) से `Hermes_MTP_Lab_v0.5.1_PORTABLE_INSTALL.zip` डाउनलोड करके पूरा संग्रह किसी भी फ़ोल्डर में निकालें।
 2. सिस्टम ट्रे सहित Hermes Desktop को पूरी तरह बंद करें।
 3. `Install-Hermes-MTP-Lab.cmd` पर डबल-क्लिक करें। इंस्टॉलर पुराने प्लगइन का बैकअप बनाता है और Python बैकएंड के लिए आधिकारिक `hermes plugins enable hermes-mtp-lab` कमांड चलाता है। यह मनमाने YAML टेक्स्ट को संपादित नहीं करता।
 4. Hermes खोलें और आवश्यकता होने पर **Capabilities → Plugins** में MTP Lab Desktop कार्ड सक्षम करें।
@@ -214,4 +214,4 @@ Hermes Desktop → **Capabilities → Plugins → Install from Git** खोल�
 ---
 
 <a id="end"></a>
-**Hermes MTP Lab · v0.5.0 · [↑ Back to top / К началу](#top)**
+**Hermes MTP Lab · v0.5.1 · [↑ Back to top / К началу](#top)**

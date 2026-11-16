@@ -1,4 +1,4 @@
-# Benchmark methodology — Hermes MTP Lab v0.5.0
+# Benchmark methodology — Hermes MTP Lab v0.5.1
 
 ## Controlled run
 

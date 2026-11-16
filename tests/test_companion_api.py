@@ -77,7 +77,7 @@ class TestCompanionDiscovery(unittest.TestCase):
                         result=TestClient(app).get('/status')
                 self.assertEqual(result.status_code,200)
                 data=result.json()
-                self.assertEqual(data['api_version'],'0.5.0')
+                self.assertEqual(data['api_version'],'0.5.1')
                 self.assertEqual([x['name'] for x in data['projector_candidates']],[projector.name])
         finally:
             for key in list(sys.modules):

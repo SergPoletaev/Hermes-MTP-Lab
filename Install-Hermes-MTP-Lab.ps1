@@ -10,7 +10,7 @@ try {
     $timeStamp = (Get-Date).ToString('yyyyMMdd-HHmmss')
     $suffix = $timeStamp + '-' + ([guid]::NewGuid().ToString('N').Substring(0,8))
 
-    Write-Host 'Hermes MTP Lab v0.5.0 - Installer (native Hermes plugin enable)' -ForegroundColor Cyan
+    Write-Host 'Hermes MTP Lab v0.5.1 - Installer (native Hermes plugin enable)' -ForegroundColor Cyan
     Write-Host "Source: $source"
     Write-Host "Destination: $target"
 
